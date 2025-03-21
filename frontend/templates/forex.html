@@ -225,7 +225,7 @@
         <div class="forex-section">
             <h2 class="forex-title" id="forex-booking-inquiry">Forex Enquiry Form</h2>
             <div class="forex-form-container">
-                <form class="forex-form">
+                <form class="forex-form" action="/api/submissions/forex" method="POST" data-submit="ajax">
                     <div class="forex-form-row">
                         <div class="forex-form-group">
                             <label for="name">Full Name</label>
@@ -242,23 +242,9 @@
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
                         </div>
                         <div class="forex-form-group">
-                            <label for="service-type">Service Required</label>
-                            <select id="service-type" name="service-type" required>
-                                <option value="">Select Service</option>
-                                <option value="currency-exchange">Currency Exchange</option>
-                                <option value="travel-card">Travel Card</option>
-                                <option value="wire-transfer">Wire Transfer</option>
-                                <option value="travel-insurance">Travel Insurance</option>
-                                <option value="other">Other Services</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="forex-form-row">
-                        <div class="forex-form-group">
-                            <label for="currency-from">From Currency</label>
-                            <select id="currency-from" name="currency-from" required>
+                            <label for="currency">Currency Required</label>
+                            <select id="currency" name="currency" required>
                                 <option value="">Select Currency</option>
-                                <option value="INR">Indian Rupee (INR)</option>
                                 <option value="USD">US Dollar (USD)</option>
                                 <option value="EUR">Euro (EUR)</option>
                                 <option value="GBP">British Pound (GBP)</option>
@@ -266,37 +252,36 @@
                                 <option value="CAD">Canadian Dollar (CAD)</option>
                                 <option value="SGD">Singapore Dollar (SGD)</option>
                                 <option value="AED">UAE Dirham (AED)</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="forex-form-group">
-                            <label for="currency-to">To Currency</label>
-                            <select id="currency-to" name="currency-to" required>
-                                <option value="">Select Currency</option>
-                                <option value="INR">Indian Rupee (INR)</option>
-                                <option value="USD">US Dollar (USD)</option>
-                                <option value="EUR">Euro (EUR)</option>
-                                <option value="GBP">British Pound (GBP)</option>
-                                <option value="AUD">Australian Dollar (AUD)</option>
-                                <option value="CAD">Canadian Dollar (CAD)</option>
-                                <option value="SGD">Singapore Dollar (SGD)</option>
-                                <option value="AED">UAE Dirham (AED)</option>
-                                <option value="other">Other</option>
+                                <option value="other">Other (Please specify in message)</option>
                             </select>
                         </div>
                     </div>
                     <div class="forex-form-row">
                         <div class="forex-form-group">
                             <label for="amount">Approximate Amount</label>
-                            <input type="text" id="amount" name="amount" placeholder="Enter amount">
+                            <input type="number" id="amount" name="amount" placeholder="Enter amount in INR" required>
                         </div>
                         <div class="forex-form-group">
-                            <label for="travel-date">Travel Date (if applicable)</label>
-                            <input type="date" id="travel-date" name="travel-date">
+                            <label for="purpose">Purpose of Foreign Exchange</label>
+                            <select id="purpose" name="purpose" required>
+                                <option value="">Select Purpose</option>
+                                <option value="travel">Travel</option>
+                                <option value="education">Education</option>
+                                <option value="medical">Medical Treatment</option>
+                                <option value="business">Business</option>
+                                <option value="emigration">Emigration</option>
+                                <option value="other">Other (Please specify in message)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="forex-form-row">
+                        <div class="forex-form-group">
+                            <label for="date">Required By Date</label>
+                            <input type="date" id="date" name="requiredDate" required>
                         </div>
                     </div>
                     <div class="forex-form-group">
-                        <label for="message">Additional Requirements</label>
+                        <label for="message">Additional Information</label>
                         <textarea id="message" name="message" placeholder="Any specific requirements or questions?"></textarea>
                     </div>
                     <button type="submit" class="forex-submit-btn">Submit Enquiry</button>
@@ -310,23 +295,28 @@
                 <div class="footer-contact-form">
                     <h3>Contact Us</h3>
                     <p>Have questions or ready to plan your next adventure? Send us a message and we'll get back to you shortly.</p>
-                    <form>
+                    <form action="/api/submissions/contact" method="POST" data-submit="ajax">
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <input type="text" placeholder="Your Name" required>
+                                <input type="text" name="name" placeholder="Your Name" required>
                             </div>
                             <div class="footer-form-group">
-                                <input type="email" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="footer-form-row">
-                            <div class="footer-form-group">
-                                <input type="text" placeholder="Subject">
+                                <input type="email" name="email" placeholder="Your Email" required>
                             </div>
                         </div>
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <textarea placeholder="Your Message" required></textarea>
+                                <input type="tel" name="phone" placeholder="Your Phone" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <input type="text" name="subject" placeholder="Subject" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <textarea name="message" placeholder="Your Message" required></textarea>
                             </div>
                         </div>
                         <div class="footer-form-submit">
@@ -372,8 +362,8 @@
                 <div class="footer-newsletter">
                     <h3>Newsletter</h3>
                     <p>Subscribe to our newsletter to receive special offers and updates on new travel destinations.</p>
-                    <form class="footer-form">
-                        <input type="email" placeholder="Your Email Address" required>
+                    <form class="footer-form" action="/api/submissions/newsletter" method="POST" data-submit="ajax">
+                        <input type="email" name="email" placeholder="Your Email Address" required>
                         <button type="submit"><i class='bx bx-paper-plane'></i></button>
                     </form>
                     <p class="footer-disclaimer">By subscribing, you agree to our Privacy Policy and consent to receive updates from our company.</p>
@@ -397,18 +387,21 @@
                 <h3>Contact Us</h3>
                 <button class="close-btn" id="closeContactPopup">&times;</button>
             </div>
-            <form id="contactForm">
+            <form id="contactForm" action="/api/submissions/contact" method="POST" data-submit="ajax">
                 <div class="form-group">
-                    <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    <input type="text" id="popup-name" name="name" placeholder="Your Name" required>
                 </div>
                 <div class="form-group">
-                    <input type="tel" id="phone" name="phone" placeholder="Phone Number" required>
+                    <input type="tel" id="popup-phone" name="phone" placeholder="Phone Number" required>
                 </div>
                 <div class="form-group">
-                    <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    <input type="email" id="popup-email" name="email" placeholder="Email Address" required>
                 </div>
                 <div class="form-group">
-                    <textarea id="message" name="message" placeholder="Tell us about your tour requirements" required></textarea>
+                    <input type="text" id="popup-subject" name="subject" placeholder="Subject" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="popup-message" name="message" placeholder="Tell us about your requirements" required></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Send Message</button>
             </form>

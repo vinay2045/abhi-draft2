@@ -219,11 +219,11 @@
                 <div class="column">
                     <h2 class="passport-title" id="passport-booking-inquiry">Passport Application Enquiry</h2>
                     <div class="passport-form-container">
-                        <form class="passport-form">
+                        <form action="/api/submissions/passport" method="POST" data-submit="ajax">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="name">Full Name</label>
-                                    <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                                    <input type="text" id="name" name="name" placeholder="Enter your full name as per documents" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="email">Email Address</label>
@@ -237,31 +237,30 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="passport-type">Passport Type</label>
-                                    <select id="passport-type" name="passport-type" required>
+                                    <select id="passport-type" name="passportType" required>
                                         <option value="">Select Passport Type</option>
                                         <option value="new">New Passport</option>
                                         <option value="renewal">Passport Renewal</option>
-                                        <option value="tatkal">Tatkal Passport</option>
-                                        <option value="child">Child Passport</option>
-                                        <option value="other">Other Services</option>
+                                        <option value="lost">Lost/Damaged Passport Replacement</option>
+                                        <option value="tatkal">Tatkal Passport Service</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="city">City</label>
-                                    <input type="text" id="city" name="city" placeholder="Your City" required>
+                                    <label for="city">City of Residence</label>
+                                    <input type="text" id="city" name="city" placeholder="Enter your current city" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="state">State</label>
-                                    <input type="text" id="state" name="state" placeholder="Your State" required>
+                                    <label for="date">Preferred Appointment Date</label>
+                                    <input type="date" id="date" name="appointmentDate" required>
                                 </div>
                             </div>
                             <div class="form-group full-width">
                                 <label for="message">Additional Information</label>
-                                <textarea id="message" name="message" placeholder="Please provide any specific requirements or questions"></textarea>
+                                <textarea id="message" name="message" placeholder="Any specific requirements or questions about your passport application?"></textarea>
                             </div>
-                            <button type="submit" class="submit-btn">Submit Enquiry</button>
+                            <button type="submit" class="btn-primary">Submit Enquiry</button>
                         </form>
                     </div>
                 </div>
@@ -274,23 +273,28 @@
                 <div class="footer-contact-form">
                     <h3>Contact Us</h3>
                     <p>Have questions or ready to plan your next adventure? Send us a message and we'll get back to you shortly.</p>
-                    <form>
+                    <form action="/api/submissions/contact" method="POST" data-submit="ajax">
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <input type="text" placeholder="Your Name" required>
+                                <input type="text" name="name" placeholder="Your Name" required>
                             </div>
                             <div class="footer-form-group">
-                                <input type="email" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="footer-form-row">
-                            <div class="footer-form-group">
-                                <input type="text" placeholder="Subject">
+                                <input type="email" name="email" placeholder="Your Email" required>
                             </div>
                         </div>
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <textarea placeholder="Your Message" required></textarea>
+                                <input type="tel" name="phone" placeholder="Your Phone" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <input type="text" name="subject" placeholder="Subject" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <textarea name="message" placeholder="Your Message" required></textarea>
                             </div>
                         </div>
                         <div class="footer-form-submit">
@@ -381,6 +385,6 @@
             </form>
         </div>
     </div>
-   
 </body>
+</html> 
 </html> 

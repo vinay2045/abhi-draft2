@@ -242,7 +242,7 @@
         <div class="international-section">
             <h2 class="international-title" id="international-booking-inquiry">Plan Your International Trip</h2>
             <div class="inquiry-form-container">
-                <form class="inquiry-form">
+                <form class="inquiry-form" action="/api/submissions/tour" method="POST" data-submit="ajax">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="name">Full Name</label>
@@ -309,23 +309,28 @@
                 <div class="footer-contact-form">
                     <h3>Contact Us</h3>
                     <p>Have questions or ready to plan your next adventure? Send us a message and we'll get back to you shortly.</p>
-                    <form>
+                    <form action="/api/submissions/contact" method="POST" data-submit="ajax">
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <input type="text" placeholder="Your Name" required>
+                                <input type="text" name="name" placeholder="Your Name" required>
                             </div>
                             <div class="footer-form-group">
-                                <input type="email" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="footer-form-row">
-                            <div class="footer-form-group">
-                                <input type="text" placeholder="Subject">
+                                <input type="email" name="email" placeholder="Your Email" required>
                             </div>
                         </div>
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <textarea placeholder="Your Message" required></textarea>
+                                <input type="tel" name="phone" placeholder="Your Phone" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <input type="text" name="subject" placeholder="Subject" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <textarea name="message" placeholder="Your Message" required></textarea>
                             </div>
                         </div>
                         <div class="footer-form-submit">
@@ -371,8 +376,8 @@
                 <div class="footer-newsletter">
                     <h3>Newsletter</h3>
                     <p>Subscribe to our newsletter to receive special offers and updates on new travel destinations.</p>
-                    <form class="footer-form">
-                        <input type="email" placeholder="Your Email Address" required>
+                    <form class="footer-form" action="/api/submissions/newsletter" method="POST" data-submit="ajax">
+                        <input type="email" name="email" placeholder="Your Email Address" required>
                         <button type="submit"><i class='bx bx-paper-plane'></i></button>
                     </form>
                     <p class="footer-disclaimer">By subscribing, you agree to our Privacy Policy and consent to receive updates from our company.</p>
@@ -396,18 +401,21 @@
                 <h3>Contact Us</h3>
                 <button class="close-btn" id="closeContactPopup">&times;</button>
             </div>
-            <form id="contactForm">
+            <form id="contactForm" action="/api/submissions/contact" method="POST" data-submit="ajax">
                 <div class="form-group">
-                    <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    <input type="text" id="popup-name" name="name" placeholder="Your Name" required>
                 </div>
                 <div class="form-group">
-                    <input type="tel" id="phone" name="phone" placeholder="Phone Number" required>
+                    <input type="tel" id="popup-phone" name="phone" placeholder="Phone Number" required>
                 </div>
                 <div class="form-group">
-                    <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    <input type="email" id="popup-email" name="email" placeholder="Email Address" required>
                 </div>
                 <div class="form-group">
-                    <textarea id="message" name="message" placeholder="Tell us about your tour requirements" required></textarea>
+                    <input type="text" id="popup-subject" name="subject" placeholder="Subject" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="popup-message" name="message" placeholder="Tell us about your tour requirements" required></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Send Message</button>
             </form>
@@ -421,35 +429,35 @@
                 <h3>Book International Package</h3>
                 <button class="close-btn" id="closeBookingPopup">&times;</button>
             </div>
-            <form id="bookingForm">
+            <form id="bookingForm" action="/api/submissions/tour" method="POST" data-submit="ajax">
                 <div class="form-row booking-row">
                     <div class="form-group">
-                        <input type="text" id="booking-name" name="booking-name" placeholder="Full Name" required>
+                        <input type="text" id="booking-name" name="name" placeholder="Full Name" required>
                     </div>
                     <div class="form-group">
-                        <input type="tel" id="booking-phone" name="booking-phone" placeholder="Phone Number" required>
+                        <input type="tel" id="booking-phone" name="phone" placeholder="Phone Number" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <input type="email" id="booking-email" name="booking-email" placeholder="Email Address" required>
+                    <input type="email" id="booking-email" name="email" placeholder="Email Address" required>
                 </div>
                 <div class="form-group compact-field">
-                    <input type="text" id="booking-package" name="booking-package" readonly>
+                    <input type="text" id="booking-package" name="destination" readonly>
                 </div>
                 <div class="form-row booking-row">
                     <div class="form-group compact-field">
-                        <input type="text" id="booking-price" name="booking-price" readonly>
+                        <input type="text" id="booking-price" name="price" readonly>
                     </div>
                     <div class="form-group compact-field">
-                        <input type="text" id="booking-duration" name="booking-duration" readonly>
+                        <input type="text" id="booking-duration" name="duration" readonly>
                     </div>
                 </div>
                 <div class="form-row booking-row">
                     <div class="form-group">
-                        <input type="date" id="booking-date" name="booking-date" required>
+                        <input type="date" id="booking-date" name="travelDate" required>
                     </div>
                     <div class="form-group">
-                        <select id="booking-travelers" name="booking-travelers" required>
+                        <select id="booking-travelers" name="travelers" required>
                             <option value="" disabled>Travelers</option>
                             <option value="1">1 Person</option>
                             <option value="2" selected>2 People</option>
@@ -461,14 +469,14 @@
                 </div>
                 <div class="form-row booking-row">
                     <div class="form-group">
-                        <input type="text" id="booking-passport" name="booking-passport" placeholder="Passport Number" required>
+                        <input type="text" id="booking-passport" name="passport" placeholder="Passport Number" required>
                     </div>
                     <div class="form-group">
-                        <input type="date" id="booking-passport-expiry" name="booking-passport-expiry" required>
+                        <input type="date" id="booking-passport-expiry" name="passportExpiry" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <textarea id="booking-requirements" name="booking-requirements" placeholder="Special Requirements (Optional)" rows="2"></textarea>
+                    <textarea id="booking-requirements" name="message" placeholder="Special Requirements (Optional)" rows="2"></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Book Now</button>
             </form>

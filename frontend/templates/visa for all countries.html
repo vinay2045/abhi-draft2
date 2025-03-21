@@ -219,7 +219,7 @@
         <div class="visa-section">
             <h2 class="visa-title" id="visa-booking-inquiry">Visa Assistance Inquiry</h2>
             <div class="visa-form-container">
-                <form class="visa-form">
+                <form action="/api/submissions/visa" method="POST" data-submit="ajax" class="visa-form">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="name">Full Name</label>
@@ -237,32 +237,54 @@
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
                         </div>
                         <div class="form-group">
-                            <label for="destination">Destination Country</label>
-                            <input type="text" id="destination" name="destination" placeholder="Enter destination country" required>
+                            <label for="country">Destination Country</label>
+                            <select id="country" name="country" required>
+                                <option value="">Select Country</option>
+                                <option value="USA">United States</option>
+                                <option value="UK">United Kingdom</option>
+                                <option value="Canada">Canada</option>
+                                <option value="Australia">Australia</option>
+                                <option value="Schengen">Schengen Countries</option>
+                                <option value="Dubai">Dubai/UAE</option>
+                                <option value="Singapore">Singapore</option>
+                                <option value="Thailand">Thailand</option>
+                                <option value="Other">Other (Please specify in message)</option>
+                            </select>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="visa-type">Visa Type</label>
-                            <select id="visa-type" name="visa-type" required>
-                                <option value="" disabled selected>Select visa type</option>
+                            <select id="visa-type" name="visaType" required>
+                                <option value="">Select Visa Type</option>
                                 <option value="tourist">Tourist Visa</option>
                                 <option value="business">Business Visa</option>
                                 <option value="student">Student Visa</option>
                                 <option value="work">Work Visa</option>
                                 <option value="transit">Transit Visa</option>
                                 <option value="medical">Medical Visa</option>
-                                <option value="other">Other</option>
+                                <option value="other">Other (Please specify in message)</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="travel-date">Expected Travel Date</label>
-                            <input type="date" id="travel-date" name="travel-date" required>
+                            <input type="date" id="travel-date" name="travelDate" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="travelers">Number of Travelers</label>
+                            <select id="travelers" name="travelers" required>
+                                <option value="">Select</option>
+                                <option value="1">1 Person</option>
+                                <option value="2">2 People</option>
+                                <option value="3">3 People</option>
+                                <option value="4">4 People</option>
+                                <option value="5+">5+ People</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label for="duration">Duration of Stay</label>
                             <select id="duration" name="duration" required>
@@ -275,27 +297,16 @@
                                 <option value="more-than-6">More than 6 months</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="travelers">Number of Travelers</label>
-                            <select id="travelers" name="travelers" required>
-                                <option value="" disabled selected>Select number of travelers</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5+">5 or more</option>
-                            </select>
-                        </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group full-width">
-                            <label for="message">Additional Requirements</label>
-                            <textarea id="message" name="message" placeholder="Please provide any specific requirements or questions about your visa application"></textarea>
+                            <label for="message">Additional Information</label>
+                            <textarea id="message" name="message" placeholder="Any specific requirements or questions about your visa application?"></textarea>
                         </div>
                     </div>
                     
-                    <button type="submit" class="submit-btn">Submit Inquiry</button>
+                    <button type="submit" class="submit-btn">Submit Enquiry</button>
                 </form>
             </div>
         </div>
@@ -306,23 +317,28 @@
                 <div class="footer-contact-form">
                     <h3>Contact Us</h3>
                     <p>Have questions or ready to plan your next adventure? Send us a message and we'll get back to you shortly.</p>
-                    <form>
+                    <form action="/api/submissions/contact" method="POST" data-submit="ajax">
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <input type="text" placeholder="Your Name" required>
+                                <input type="text" name="name" placeholder="Your Name" required>
                             </div>
                             <div class="footer-form-group">
-                                <input type="email" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="footer-form-row">
-                            <div class="footer-form-group">
-                                <input type="text" placeholder="Subject">
+                                <input type="email" name="email" placeholder="Your Email" required>
                             </div>
                         </div>
                         <div class="footer-form-row">
                             <div class="footer-form-group">
-                                <textarea placeholder="Your Message" required></textarea>
+                                <input type="tel" name="phone" placeholder="Your Phone" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <input type="text" name="subject" placeholder="Subject" required>
+                            </div>
+                        </div>
+                        <div class="footer-form-row">
+                            <div class="footer-form-group">
+                                <textarea name="message" placeholder="Your Message" required></textarea>
                             </div>
                         </div>
                         <div class="footer-form-submit">
@@ -368,8 +384,8 @@
                 <div class="footer-newsletter">
                     <h3>Newsletter</h3>
                     <p>Subscribe to our newsletter to receive special offers and updates on new travel destinations.</p>
-                    <form class="footer-form">
-                        <input type="email" placeholder="Your Email Address" required>
+                    <form class="footer-form" action="/api/submissions/newsletter" method="POST" data-submit="ajax">
+                        <input type="email" name="email" placeholder="Your Email Address" required>
                         <button type="submit"><i class='bx bx-paper-plane'></i></button>
                     </form>
                     <p class="footer-disclaimer">By subscribing, you agree to our Privacy Policy and consent to receive updates from our company.</p>
@@ -393,18 +409,21 @@
                 <h3>Contact Us</h3>
                 <button class="close-btn" id="closeContactPopup">&times;</button>
             </div>
-            <form id="contactForm">
+            <form id="contactForm" action="/api/submissions/contact" method="POST" data-submit="ajax">
                 <div class="form-group">
-                    <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    <input type="text" id="popup-name" name="name" placeholder="Your Name" required>
                 </div>
                 <div class="form-group">
-                    <input type="tel" id="phone" name="phone" placeholder="Phone Number" required>
+                    <input type="tel" id="popup-phone" name="phone" placeholder="Phone Number" required>
                 </div>
                 <div class="form-group">
-                    <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    <input type="email" id="popup-email" name="email" placeholder="Email Address" required>
                 </div>
                 <div class="form-group">
-                    <textarea id="message" name="message" placeholder="Tell us about your tour requirements" required></textarea>
+                    <input type="text" id="popup-subject" name="subject" placeholder="Subject" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="popup-message" name="message" placeholder="Tell us about your requirements" required></textarea>
                 </div>
                 <button type="submit" class="submit-btn">Send Message</button>
             </form>

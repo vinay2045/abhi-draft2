@@ -940,11 +940,24 @@ function setupMenuAndUI() {
  * Handle form submissions with AJAX
  */
 function setupFormSubmissions() {
+    // Track if submission is in progress to prevent multiple submissions
+    let isSubmitting = false;
+    
+    // Remove any existing alert on page load
+    document.querySelectorAll('.alert').forEach(alert => alert.remove());
+    
     const forms = document.querySelectorAll('form[data-submit="ajax"]');
     
     forms.forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Prevent multiple submissions
+            if (isSubmitting) return;
+            isSubmitting = true;
+            
+            // Remove all existing alerts first
+            document.querySelectorAll('.alert').forEach(alert => alert.remove());
             
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -953,47 +966,192 @@ function setupFormSubmissions() {
             submitBtn.disabled = true;
             
             const formData = new FormData(form);
-            // Get form action or default to contact form endpoint
             const action = form.getAttribute('action') || '/api/submissions/contact';
             
-            // Convert FormData to object for easier manipulation
+            // Convert FormData to object
             const formObject = {};
             formData.forEach((value, key) => {
                 formObject[key] = value;
             });
+            
+            // Check required fields for contact form
+            if (action.includes('/contact')) {
+                const missingFields = [];
+                const requiredFields = ['name', 'email', 'phone', 'subject', 'message'];
+                
+                requiredFields.forEach(field => {
+                    if (!formObject[field] || formObject[field].trim() === '') {
+                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+                    }
+                });
+                
+                if (missingFields.length > 0) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                    isSubmitting = false;
+                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    return;
+                }
+            }
             
             try {
                 const response = await fetch(action, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': 'travel_api_key_2024'  // Hardcoded API key
+                        'x-api-key': 'travelsystem2025'
                     },
                     body: JSON.stringify(formObject)
                 });
-                
-                const data = await response.json();
                 
                 // Reset button state
                 submitBtn.textContent = originalBtnText;
                 submitBtn.disabled = false;
                 
-                if (response.ok && data.success) {
-                    // Success
-                    form.reset();
-                    showAlert('success', 'Thank you! Your submission has been received.');
-                } else {
-                    // API error
-                    showAlert('error', data.message || 'There was a problem submitting the form. Please try again.');
+                try {
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Success
+                        form.reset();
+                        showAlert('success', 'Thank you! Your submission has been received.');
+                    } else {
+                        // API error
+                        let errorMessage = data.message || 'There was a problem with your submission. Please try again.';
+                        
+                        if (data.errors && Array.isArray(data.errors)) {
+                            errorMessage = data.errors.map(err => err.msg).join(', ');
+                        }
+                        
+                        showAlert('error', errorMessage);
+                    }
+                } catch (parseError) {
+                    showAlert('error', 'Error processing server response. Please try again.');
                 }
             } catch (error) {
-                console.error('Submission error:', error);
                 submitBtn.textContent = originalBtnText;
                 submitBtn.disabled = false;
-                showAlert('error', 'There was a problem submitting the form. Please try again.');
+                showAlert('error', 'Network error. Please check your connection and try again.');
             }
+            
+            // Reset submission status
+            isSubmitting = false;
         });
     });
+}
+
+/**
+ * Show an alert message to the user
+ * @param {string} type - 'success' or 'error'
+ * @param {string} message - The message to display
+ */
+function showAlert(type, message) {
+    // First, remove any existing alerts to prevent duplicates
+    const existingAlerts = document.querySelectorAll('.alert');
+    if (existingAlerts.length > 0) {
+        existingAlerts.forEach(alert => {
+            document.body.removeChild(alert);
+        });
+    }
+    
+    // Create new alert
+    const alertBox = document.createElement('div');
+    alertBox.className = `alert alert-${type}`;
+    alertBox.innerHTML = `
+        <div class="alert-content">
+            <i class='bx ${type === 'success' ? 'bx-check-circle' : 'bx-x-circle'}'></i>
+            <span>${message}</span>
+        </div>
+        <button class="alert-close">&times;</button>
+    `;
+    
+    // Add to document
+    document.body.appendChild(alertBox);
+    
+    // Add close button functionality
+    const closeBtn = alertBox.querySelector('.alert-close');
+    closeBtn.addEventListener('click', () => {
+        if (document.body.contains(alertBox)) {
+            document.body.removeChild(alertBox);
+        }
+    });
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(alertBox)) {
+            document.body.removeChild(alertBox);
+        }
+    }, 5000);
+    
+    // Add styles if they don't exist
+    if (!document.querySelector('#alert-styles')) {
+        const style = document.createElement('style');
+        style.id = 'alert-styles';
+        style.innerHTML = `
+            .alert {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideIn 0.3s ease forwards;
+            }
+            
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .alert-success {
+                background-color: #d4edda;
+                color: #155724;
+                border-left: 4px solid #28a745;
+            }
+            
+            .alert-error {
+                background-color: #f8d7da;
+                color: #721c24;
+                border-left: 4px solid #dc3545;
+            }
+            
+            .alert-content {
+                display: flex;
+                align-items: center;
+            }
+            
+            .alert-content i {
+                margin-right: 10px;
+                font-size: 1.5rem;
+            }
+            
+            .alert-close {
+                background: none;
+                border: none;
+                color: inherit;
+                font-size: 1.5rem;
+                cursor: pointer;
+                padding: 0;
+                margin-left: 15px;
+                opacity: 0.7;
+            }
+            
+            .alert-close:hover {
+                opacity: 1;
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // Add fallback data objects at the beginning of the file before the DOMContentLoaded event
@@ -1443,113 +1601,4 @@ function initHeroSection(data) {
             heroDescription.textContent = data.description;
         }
     }
-}
-
-/**
- * Shows a notification alert to the user
- * @param {string} type - 'success' or 'error'
- * @param {string} message - The message to display
- */
-function showAlert(type, message) {
-    const alertBox = document.createElement('div');
-    alertBox.className = `alert alert-${type}`;
-    alertBox.innerHTML = `
-        <div class="alert-content">
-            <i class='bx ${type === 'success' ? 'bx-check-circle' : 'bx-x-circle'}'></i>
-            <span>${message}</span>
-        </div>
-        <button class="alert-close">&times;</button>
-    `;
-    
-    document.body.appendChild(alertBox);
-    
-    // Add styles if they don't exist
-    if (!document.querySelector('#alert-styles')) {
-        const style = document.createElement('style');
-        style.id = 'alert-styles';
-        style.innerHTML = `
-            .alert {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 5px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                min-width: 300px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10000;
-                animation: slideIn 0.3s ease forwards;
-            }
-            
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-            
-            .alert-success {
-                background-color: #d4edda;
-                color: #155724;
-                border-left: 4px solid #28a745;
-            }
-            
-            .alert-error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border-left: 4px solid #dc3545;
-            }
-            
-            .alert-content {
-                display: flex;
-                align-items: center;
-            }
-            
-            .alert-content i {
-                margin-right: 10px;
-                font-size: 1.25rem;
-            }
-            
-            .alert-close {
-                background: none;
-                border: none;
-                font-size: 1.25rem;
-                cursor: pointer;
-                margin-left: 15px;
-                color: inherit;
-                opacity: 0.7;
-            }
-            
-            .alert-close:hover {
-                opacity: 1;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    // Handle close button
-    const closeBtn = alertBox.querySelector('.alert-close');
-    closeBtn.addEventListener('click', () => {
-        alertBox.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(() => {
-            alertBox.remove();
-        }, 300);
-    });
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (document.body.contains(alertBox)) {
-            alertBox.style.animation = 'slideOut 0.3s ease forwards';
-            setTimeout(() => {
-                if (document.body.contains(alertBox)) {
-                    alertBox.remove();
-                }
-            }, 300);
-        }
-    }, 5000);
 }
