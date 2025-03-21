@@ -26,8 +26,8 @@ const honeymoonSubmissionSchema = new mongoose.Schema({
         required: false
     },
     travelDates: {
-        type: String,
-        required: true
+        type: Date
+        
     },
     duration: {
         type: String,

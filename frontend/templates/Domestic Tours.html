@@ -434,6 +434,7 @@
                     </select>
                 </div>
                 <input type="hidden" name="tourType" value="domestic">
+                <input type="hidden" name="formType" value="tour">
                 <div class="form-group">
                     <label for="booking-message">Special Requirements</label>
                     <textarea id="booking-message" name="message"></textarea>
@@ -450,7 +451,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const bookingPopup = document.getElementById('bookingPopup');
             const closeBookingPopup = document.getElementById('closeBookingPopup');
-            const bookingForm = document.getElementById('bookingForm');
             const tourButtons = document.querySelectorAll('.tour-card-btn');
             
             // Filter functionality

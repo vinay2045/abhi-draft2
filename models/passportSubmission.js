@@ -25,7 +25,7 @@ const PassportSubmissionSchema = new mongoose.Schema({
     },
     urgency: {
         type: String,
-        enum: ['normal', 'tatkal', 'super-tatkal'],
+        enum: ['normal', 'Normal', 'tatkal', 'Tatkal', 'super-tatkal', 'Super-Tatkal', 'standard', 'Standard'],
         required: [true, 'Urgency level is required']
     },
     numberOfApplicants: {

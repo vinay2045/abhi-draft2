@@ -256,7 +256,7 @@
                     <div class="honeymoon-form-row">
                         <div class="honeymoon-form-group">
                             <label for="travel-dates">Expected Travel Dates</label>
-                            <input type="text" id="travel-dates" name="travel-dates" placeholder="Month & Year" required>
+                            <input type="date">
                         </div>
                         <div class="honeymoon-form-group">
                             <label for="duration">Duration</label>
@@ -420,51 +420,66 @@
         </div>
     </div>
     
-    <!-- Booking Form Popup -->
-    <div class="contact-popup" id="bookingPopup">
-        <div class="contact-popup-content booking-popup-content">
-            <div class="popup-header">
-                <h3>Book Honeymoon Package</h3>
-                <button class="close-btn" id="closeBookingPopup">&times;</button>
-            </div>
-            <form id="bookingForm">
-                <div class="form-row booking-row">
-                    <div class="form-group">
-                        <input type="text" id="booking-name" name="booking-name" placeholder="Full Name" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="tel" id="booking-phone" name="booking-phone" placeholder="Phone Number" required>
-                    </div>
+    <!-- Booking Modal -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Book Your Honeymoon Package</h2>
+            <form id="bookingForm" action="/api/submissions/honeymoon" method="POST" data-submit="ajax">
+                <div class="form-group">
+                    <label for="name">Your Names</label>
+                    <input type="text" id="name" name="name" placeholder="Couple's Names" required>
                 </div>
                 <div class="form-group">
-                    <input type="email" id="booking-email" name="booking-email" placeholder="Email Address" required>
-                </div>
-                <div class="form-group compact-field">
-                    <input type="text" id="booking-package" name="booking-package" readonly>
-                </div>
-                <div class="form-row booking-row">
-                    <div class="form-group compact-field">
-                        <input type="text" id="booking-price" name="booking-price" readonly>
-                    </div>
-                    <div class="form-group compact-field">
-                        <input type="text" id="booking-duration" name="booking-duration" readonly>
-                    </div>
-                </div>
-                <div class="form-row booking-row">
-                    <div class="form-group">
-                        <input type="date" id="booking-date" name="booking-date" required>
-                    </div>
-                    <div class="form-group">
-                        <select id="booking-travelers" name="booking-travelers" required>
-                            <option value="" disabled>Travelers</option>
-                            <option value="2" selected>2 People</option>
-                        </select>
-                    </div>
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Your Email" required>
                 </div>
                 <div class="form-group">
-                    <textarea id="booking-requirements" name="booking-requirements" placeholder="Special Requirements (Optional)" rows="2"></textarea>
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Your Phone" required>
                 </div>
-                <button type="submit" class="submit-btn">Book Now</button>
+                <div class="form-group">
+                    <label for="destination">Destination</label>
+                    <select id="destination" name="destination" required>
+                        <option value="">Select Destination</option>
+                        <option value="Bali">Bali</option>
+                        <option value="Maldives">Maldives</option>
+                        <option value="Santorini">Santorini</option>
+                        <option value="Paris">Paris</option>
+                        <option value="Swiss Alps">Swiss Alps</option>
+                        <option value="Goa">Goa</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="travel-date">Travel Date</label>
+                    <input type="date" id="travel-date" name="travelDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <select id="duration" name="duration" required>
+                        <option value="">Select Duration</option>
+                        <option value="3-5 days">3-5 Days</option>
+                        <option value="6-8 days">6-8 Days</option>
+                        <option value="9-12 days">9-12 Days</option>
+                        <option value="13+ days">13+ Days</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="budget">Budget Range</label>
+                    <select id="budget" name="budget" required>
+                        <option value="">Select Budget Range</option>
+                        <option value="₹50,000-₹75,000">₹50,000-₹75,000</option>
+                        <option value="₹75,000-₹1,00,000">₹75,000-₹1,00,000</option>
+                        <option value="₹1,00,000-₹1,50,000">₹1,00,000-₹1,50,000</option>
+                        <option value="₹1,50,000+">₹1,50,000+</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="message">Special Requests</label>
+                    <textarea id="message" name="message" placeholder="Any special requests or preferences?"></textarea>
+                </div>
+                <input type="hidden" name="formType" value="honeymoon">
+                <button type="submit">Book Now</button>
             </form>
         </div>
     </div>
@@ -473,62 +488,71 @@
     <!-- Booking popup handling script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const bookingPopup = document.getElementById('bookingPopup');
-            const closeBookingPopup = document.getElementById('closeBookingPopup');
-            const bookingForm = document.getElementById('bookingForm');
-            const tourButtons = document.querySelectorAll('.honeymoon-card-btn');
+            // Set up booking modal
+            const modal = document.getElementById('bookingModal');
+            const closeModal = document.querySelector('.close-modal');
+            const bookNowButtons = document.querySelectorAll('.honeymoon-card-btn');
             
-            // Set minimum date for travel date input to tomorrow
-            const bookingDate = document.getElementById('booking-date');
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            bookingDate.min = tomorrow.toISOString().split('T')[0];
+            // Set minimum date for travel date to tomorrow
+            const travelDateInput = document.getElementById('travel-date');
+            if (travelDateInput) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                travelDateInput.min = tomorrow.toISOString().split('T')[0];
+            }
             
-            // Close booking popup
-            closeBookingPopup.addEventListener('click', function() {
-                bookingPopup.style.display = 'none';
-            });
-            
-            // Close popup when clicking outside
-            window.addEventListener('click', function(event) {
-                if (event.target === bookingPopup) {
-                    bookingPopup.style.display = 'none';
-                }
-            });
-            
-            // Add click event to all "Book Now" buttons
-            tourButtons.forEach(button => {
-                button.addEventListener('click', function(event) {
-                    event.preventDefault();
+            // Handle book now button clicks
+            bookNowButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
                     
-                    // Get tour details from the card
-                    const tourCard = this.closest('.honeymoon-card');
-                    const tourTitle = tourCard.querySelector('.honeymoon-card-title').textContent;
-                    const tourPrice = tourCard.querySelector('.honeymoon-card-price').textContent;
-                    const tourDuration = tourCard.querySelector('.honeymoon-card-duration').textContent.replace(/[^\d\/\s]+/g, '').trim();
+                    // Get package details
+                    const packageCard = this.closest('.honeymoon-card');
+                    let destination = '';
+                    let price = '';
                     
-                    // Set values in the booking form
-                    document.getElementById('booking-package').value = tourTitle;
-                    document.getElementById('booking-price').value = tourPrice;
-                    document.getElementById('booking-duration').value = tourDuration;
+                    if (packageCard) {
+                        destination = packageCard.querySelector('.honeymoon-card-title').textContent;
+                        price = packageCard.querySelector('.honeymoon-card-price').textContent;
+                        
+                        // Set destination in form if it exists
+                        const destinationSelect = document.getElementById('destination');
+                        if (destinationSelect) {
+                            // Try to find matching option
+                            for (let i = 0; i < destinationSelect.options.length; i++) {
+                                if (destinationSelect.options[i].value === destination || 
+                                    destination.includes(destinationSelect.options[i].value)) {
+                                    destinationSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     
-                    // Show the booking popup
-                    bookingPopup.style.display = 'flex';
+                    // Show modal
+                    modal.style.display = 'block';
                 });
             });
             
-            // Handle form submission
-            bookingForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                
-                // Here you would normally send the form data to your server
-                alert('Thank you for your booking! We will contact you shortly to confirm the details.');
-                
-                // Close the popup
-                bookingPopup.style.display = 'none';
-                
-                // Reset the form
-                bookingForm.reset();
+            // Close modal on X click
+            if (closeModal) {
+                closeModal.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    modal.style.display = 'none';
+                }
             });
         });
     </script>

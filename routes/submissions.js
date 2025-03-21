@@ -10,6 +10,36 @@ const PassportSubmission = require('../models/passportSubmission');
 const ForexSubmission = require('../models/forexSubmission');
 const HoneymoonSubmission = require('../models/honeymoonSubmission');
 
+// Middleware to determine form type and route to appropriate handler
+function determineFormType(req, res, next) {
+    const formType = req.body.formType || '';
+    const url = req.url.toLowerCase();
+    
+    // Only process if we need to determine the type
+    if (url === '/') {
+        if (formType === 'passport' || url.includes('passport')) {
+            req.url = '/passport';
+        } else if (formType === 'visa' || url.includes('visa')) {
+            req.url = '/visa';
+        } else if (formType === 'flight' || url.includes('flight')) {
+            req.url = '/flight';
+        } else if (formType === 'tour' || url.includes('tour')) {
+            req.url = '/tour';
+        } else if (formType === 'honeymoon' || url.includes('honeymoon')) {
+            req.url = '/honeymoon';
+        } else if (formType === 'forex' || url.includes('forex')) {
+            req.url = '/forex';
+        } else {
+            req.url = '/contact';
+        }
+    }
+    
+    next();
+}
+
+// Apply this middleware to handle form submissions
+router.use(determineFormType);
+
 /**
  * @route   POST /api/submissions/contact
  * @desc    Submit a contact form

@@ -961,12 +961,14 @@ function setupFormSubmissions() {
             
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.textContent;
-            submitBtn.textContent = 'Submitting...';
-            submitBtn.disabled = true;
+            const originalBtnText = submitBtn ? submitBtn.textContent : 'Submit';
+            if (submitBtn) {
+                submitBtn.textContent = 'Submitting...';
+                submitBtn.disabled = true;
+            }
             
             const formData = new FormData(form);
-            const action = form.getAttribute('action') || '/api/submissions/contact';
+            const formAction = form.getAttribute('action') || '/api/submissions/contact';
             
             // Convert FormData to object
             const formObject = {};
@@ -974,72 +976,135 @@ function setupFormSubmissions() {
                 formObject[key] = value;
             });
             
-            // Check required fields for contact form
-            if (action.includes('/contact')) {
-                const missingFields = [];
-                const requiredFields = ['name', 'email', 'phone', 'subject', 'message'];
-                
-                requiredFields.forEach(field => {
-                    if (!formObject[field] || formObject[field].trim() === '') {
-                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
-                    }
-                });
+            // Determine the correct form type based on form attributes and set API endpoint
+            let apiEndpoint = formAction;
+            const formType = determineFormType(form);
+            
+            console.log(`Form submission detected with type: ${formType}`);
+            
+            // Special handling based on form type
+            if (formType === 'contact') {
+                // Contact form validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'subject', 'message']);
                 
                 if (missingFields.length > 0) {
-                    submitBtn.textContent = originalBtnText;
-                    submitBtn.disabled = false;
-                    isSubmitting = false;
-                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    resetSubmissionState(submitBtn, originalBtnText);
                     return;
                 }
-            }
-            // Check required fields for passport form
-            else if (action.includes('/passport')) {
-                const missingFields = [];
-                const requiredFields = ['name', 'email', 'phone', 'passportType', 'appointmentDate', 'city'];
                 
-                requiredFields.forEach(field => {
-                    if (!formObject[field] || formObject[field].trim() === '') {
-                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
-                    }
-                });
+                apiEndpoint = '/api/submissions/contact';
+            }
+            else if (formType === 'passport') {
+                // Passport form validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
                 
                 if (missingFields.length > 0) {
-                    submitBtn.textContent = originalBtnText;
-                    submitBtn.disabled = false;
-                    isSubmitting = false;
-                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    resetSubmissionState(submitBtn, originalBtnText);
                     return;
                 }
                 
                 // Map form field names to match the API expectations
-                formObject.applicationType = formObject.passportType;
-                formObject.expectedDate = formObject.appointmentDate;
-                formObject.urgency = 'Normal';  // Default value
-                formObject.numberOfApplicants = '1';  // Default value
-            }
-            // Check required fields for visa form
-            else if (action.includes('/visa')) {
-                const missingFields = [];
-                const requiredFields = ['name', 'email', 'phone', 'destination', 'visaType', 'travelDate'];
+                if (formObject.passportType) {
+                    formObject.applicationType = formObject.passportType;
+                }
+                if (formObject.appointmentDate) {
+                    formObject.expectedDate = formObject.appointmentDate;
+                }
                 
-                requiredFields.forEach(field => {
-                    if (!formObject[field] || formObject[field].trim() === '') {
-                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
-                    }
-                });
+                // Ensure urgency has a valid value
+                formObject.urgency = formObject.urgency || 'Standard';
+                formObject.numberOfApplicants = formObject.numberOfApplicants || '1';
+                
+                apiEndpoint = '/api/submissions/passport';
+            }
+            else if (formType === 'visa') {
+                // Visa form validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
                 
                 if (missingFields.length > 0) {
-                    submitBtn.textContent = originalBtnText;
-                    submitBtn.disabled = false;
-                    isSubmitting = false;
-                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    resetSubmissionState(submitBtn, originalBtnText);
                     return;
                 }
+                
+                // Make sure destination is set for the API
+                if (formObject.country && !formObject.destination) {
+                    formObject.destination = formObject.country;
+                }
+                
+                if (formObject.travelDate) {
+                    formObject.expectedDate = formObject.travelDate;
+                }
+                
+                apiEndpoint = '/api/submissions/visa';
+            }
+            else if (formType === 'flight') {
+                // Flight form validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
+                
+                if (missingFields.length > 0) {
+                    resetSubmissionState(submitBtn, originalBtnText);
+                    return;
+                }
+                
+                apiEndpoint = '/api/submissions/flight';
+            }
+            else if (formType === 'tour') {
+                // Tour booking validation - reduced required fields
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
+                
+                if (missingFields.length > 0) {
+                    resetSubmissionState(submitBtn, originalBtnText);
+                    return;
+                }
+                
+                // Ensure we have a destination
+                if (!formObject.destination && formObject.tourName) {
+                    formObject.destination = formObject.tourName;
+                }
+                
+                // If a date field exists but with different name
+                if (!formObject.travelDate && formObject.date) {
+                    formObject.travelDate = formObject.date;
+                }
+                
+                apiEndpoint = '/api/submissions/tour';
+                
+                // Explicitly set this field to ensure proper categorization
+                formObject.formType = 'tour';
+            }
+            else if (formType === 'honeymoon') {
+                // Honeymoon booking validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
+                
+                if (missingFields.length > 0) {
+                    resetSubmissionState(submitBtn, originalBtnText);
+                    return;
+                }
+                
+                apiEndpoint = '/api/submissions/honeymoon';
+                
+                // Explicitly set this field to ensure proper categorization
+                formObject.formType = 'honeymoon';
+            }
+            else if (formType === 'forex') {
+                // Forex validation
+                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
+                
+                if (missingFields.length > 0) {
+                    resetSubmissionState(submitBtn, originalBtnText);
+                    return;
+                }
+                
+                apiEndpoint = '/api/submissions/forex';
             }
             
+            // Ensure the form type is explicitly set
+            formObject.formType = formType;
+            
+            console.log(`Submitting ${formType} form to ${apiEndpoint}`);
+            
             try {
-                const response = await fetch(action, {
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1049,8 +1114,10 @@ function setupFormSubmissions() {
                 });
                 
                 // Reset button state
-                submitBtn.textContent = originalBtnText;
-                submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                }
                 
                 try {
                     const data = await response.json();
@@ -1059,6 +1126,21 @@ function setupFormSubmissions() {
                         // Success
                         form.reset();
                         showAlert('success', 'Thank you! Your submission has been received.');
+                        
+                        // If it's a booking form inside a modal, close the modal
+                        const modal = form.closest('.modal, .contact-popup');
+                        if (modal) {
+                            const closeModalBtn = modal.querySelector('.close-modal, .close-btn');
+                            if (closeModalBtn) {
+                                setTimeout(() => {
+                                    closeModalBtn.click();
+                                }, 2000);
+                            } else {
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                }, 2000);
+                            }
+                        }
                     } else {
                         // API error
                         let errorMessage = data.message || 'There was a problem with your submission. Please try again.';
@@ -1073,8 +1155,10 @@ function setupFormSubmissions() {
                     showAlert('error', 'Error processing server response. Please try again.');
                 }
             } catch (error) {
-                submitBtn.textContent = originalBtnText;
-                submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                }
                 showAlert('error', 'Network error. Please check your connection and try again.');
             }
             
@@ -1082,76 +1166,325 @@ function setupFormSubmissions() {
             isSubmitting = false;
         });
     });
+    
+    // Helper function to validate required fields
+    function validateRequiredFields(formObject, requiredFields) {
+        const missingFields = [];
+        requiredFields.forEach(field => {
+            if (!formObject[field] || formObject[field].trim() === '') {
+                missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+            }
+        });
+        
+        if (missingFields.length > 0) {
+            showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+        }
+        
+        return missingFields;
+    }
+    
+    // Helper function to reset submission state
+    function resetSubmissionState(submitBtn, originalBtnText) {
+        if (submitBtn) {
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
+        }
+        isSubmitting = false;
+    }
 }
 
 /**
- * Show a notification message at the top of the screen (React/Next.js style)
+ * Show a notification message to the user
  * @param {string} type - 'success' or 'error'
  * @param {string} message - The message to display
  */
 function showAlert(type, message) {
     // First remove any existing notifications
     document.querySelectorAll('.notification').forEach(notification => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
+        notification.remove();
     });
-    
-    // Create a notification container if it doesn't exist
-    let notificationContainer = document.getElementById('notification-container');
-    if (!notificationContainer) {
-        notificationContainer = document.createElement('div');
-        notificationContainer.id = 'notification-container';
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.top = '0';
-        notificationContainer.style.left = '0';
-        notificationContainer.style.right = '0';
-        notificationContainer.style.display = 'flex';
-        notificationContainer.style.justifyContent = 'center';
-        notificationContainer.style.zIndex = '10000';
-        document.body.appendChild(notificationContainer);
-    }
     
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
-    notification.textContent = message;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class='bx ${type === 'success' ? 'bx-check-circle' : 'bx-x-circle'}'></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close">&times;</button>
+    `;
     
     // Style the notification
-    notification.style.backgroundColor = type === 'success' ? '#d1e7dd' : '#f8d7da';
-    notification.style.color = type === 'success' ? '#0f5132' : '#842029';
-    notification.style.padding = '12px 20px';
-    notification.style.margin = '12px';
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
+    notification.style.color = type === 'success' ? '#155724' : '#721c24';
+    notification.style.padding = '12px 15px';
     notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
+    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    notification.style.zIndex = '10000';
+    notification.style.minWidth = '300px';
+    notification.style.display = 'flex';
+    notification.style.justifyContent = 'space-between';
+    notification.style.alignItems = 'center';
     notification.style.opacity = '0';
-    notification.style.transition = 'opacity 0.3s ease';
-    notification.style.fontWeight = '500';
+    notification.style.transform = 'translateX(50px)';
+    notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     
-    // Add to container
-    notificationContainer.appendChild(notification);
+    // Style the notification content
+    const content = notification.querySelector('.notification-content');
+    content.style.display = 'flex';
+    content.style.alignItems = 'center';
     
-    // Trigger animation
-    setTimeout(() => {
-        notification.style.opacity = '1';
-    }, 10);
+    // Style the icon
+    const icon = notification.querySelector('i');
+    icon.style.marginRight = '10px';
+    icon.style.fontSize = '1.2rem';
     
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
+    // Style the close button
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.color = 'inherit';
+    closeBtn.style.fontSize = '1.2rem';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.marginLeft = '10px';
+    closeBtn.style.opacity = '0.7';
+    
+    // Add the notification to the document
+    document.body.appendChild(notification);
+    
+    // Set up the close button
+    closeBtn.addEventListener('click', function() {
         notification.style.opacity = '0';
+        notification.style.transform = 'translateX(50px)';
         setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-            
-            // Remove the container if it's empty
-            if (notificationContainer.children.length === 0 && document.body.contains(notificationContainer)) {
-                document.body.removeChild(notificationContainer);
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
             }
         }, 300);
+    });
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(50px)';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }
     }, 5000);
+}
+
+/**
+ * Set up Book Now buttons to trigger booking popups
+ */
+function setupBookNowButtons() {
+    // Get all book now buttons across the site with various selectors
+    const bookButtons = document.querySelectorAll('.book-now-btn, button[data-tour], a.book-now, .tour-card-btn, .cta-btn, button:contains("Book Now")');
+    
+    console.log(`Found ${bookButtons.length} book now buttons`);
+    
+    bookButtons.forEach(button => {
+        // Remove any existing event listeners to prevent duplicates
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Book now button clicked');
+            
+            // Get tour details from button attributes or parent elements
+            const tourCard = newButton.closest('.tour-card');
+            const tourSection = newButton.closest('.destination-card, section');
+            
+            const tourName = newButton.getAttribute('data-tour') || 
+                            tourCard?.querySelector('.tour-card-title, .tour-title')?.textContent ||
+                            tourSection?.querySelector('h2, h3')?.textContent ||
+                            '';
+            
+            const tourPrice = newButton.getAttribute('data-price') || 
+                             tourCard?.querySelector('.tour-card-price, .tour-price')?.textContent ||
+                             tourSection?.querySelector('.price, .per-person, [class*="price"]')?.textContent ||
+                             '';
+            
+            // Find the booking popup modal - search for various modal IDs
+            let bookingModal;
+            if (newButton.getAttribute('data-target')) {
+                // If the button has a specific target modal
+                bookingModal = document.querySelector(newButton.getAttribute('data-target'));
+            } else {
+                // Look for any booking modal using various possible IDs
+                bookingModal = document.getElementById('bookingPopup') || 
+                              document.getElementById('bookingModal') || 
+                              document.querySelector('.booking-modal, .contact-popup, .modal');
+            }
+            
+            console.log('Looking for booking modal...');
+            
+            // If we found a modal, populate it with tour details
+            if (bookingModal) {
+                console.log('Booking modal found:', bookingModal);
+                
+                // Make the modal visible
+                bookingModal.style.display = 'flex';
+                
+                // Set the tour name in the modal if there's a place for it
+                const tourNameField = bookingModal.querySelector('#booking-tour') || 
+                                     bookingModal.querySelector('.tour-name') || 
+                                     bookingModal.querySelector('[name="tourName"]') ||
+                                     bookingModal.querySelector('[name="destination"]');
+                
+                if (tourNameField && tourName) {
+                    console.log('Setting tour name to:', tourName);
+                    if (tourNameField.tagName === 'INPUT' || tourNameField.tagName === 'SELECT') {
+                        // For selects, try to find a matching option
+                        if (tourNameField.tagName === 'SELECT') {
+                            let matchFound = false;
+                            
+                            // Try to find an exact match
+                            for (let i = 0; i < tourNameField.options.length; i++) {
+                                if (tourNameField.options[i].text === tourName || 
+                                    tourNameField.options[i].value === tourName) {
+                                    tourNameField.selectedIndex = i;
+                                    matchFound = true;
+                                    break;
+                                }
+                            }
+                            
+                            // If no exact match, look for a partial match
+                            if (!matchFound) {
+                                for (let i = 0; i < tourNameField.options.length; i++) {
+                                    if (tourName.includes(tourNameField.options[i].text) || 
+                                        tourNameField.options[i].text.includes(tourName)) {
+                                        tourNameField.selectedIndex = i;
+                                        matchFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // If still no match, set the first non-empty option
+                            if (!matchFound) {
+                                for (let i = 0; i < tourNameField.options.length; i++) {
+                                    if (tourNameField.options[i].value) {
+                                        tourNameField.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            // For regular inputs
+                            tourNameField.value = tourName;
+                        }
+                    } else {
+                        tourNameField.textContent = tourName;
+                    }
+                }
+                
+                // Set the tour price if there's a place for it
+                const tourPriceField = bookingModal.querySelector('#booking-price') || 
+                                      bookingModal.querySelector('.tour-price') || 
+                                      bookingModal.querySelector('[name="tourPrice"]') ||
+                                      bookingModal.querySelector('[name="price"]');
+                
+                if (tourPriceField && tourPrice) {
+                    if (tourPriceField.tagName === 'INPUT') {
+                        tourPriceField.value = tourPrice;
+                    } else {
+                        tourPriceField.textContent = tourPrice;
+                    }
+                }
+                
+                // Add the formType as a hidden field if it doesn't exist
+                let formTypeField = bookingModal.querySelector('input[name="formType"]');
+                if (!formTypeField) {
+                    const form = bookingModal.querySelector('form');
+                    if (form) {
+                        formTypeField = document.createElement('input');
+                        formTypeField.type = 'hidden';
+                        formTypeField.name = 'formType';
+                        
+                        // Determine if it's domestic or international
+                        if (window.location.href.includes('Domestic') || 
+                            document.title.includes('Domestic')) {
+                            formTypeField.value = 'tour';
+                        } else if (window.location.href.includes('International') || 
+                                 document.title.includes('International')) {
+                            formTypeField.value = 'tour';
+                        } else {
+                            formTypeField.value = 'tour';
+                        }
+                        
+                        form.appendChild(formTypeField);
+                    }
+                }
+                
+                // Ensure the form has the ajax attribute
+                const modalForm = bookingModal.querySelector('form');
+                if (modalForm && !modalForm.hasAttribute('data-submit')) {
+                    modalForm.setAttribute('data-submit', 'ajax');
+                    modalForm.setAttribute('action', '/api/submissions/tour');
+                    modalForm.setAttribute('method', 'POST');
+                }
+                
+                // Remove any inline event handlers that might interfere
+                if (modalForm) {
+                    modalForm.onsubmit = null;
+                    
+                    // Temporarily remove existing event listeners
+                    const newForm = modalForm.cloneNode(true);
+                    modalForm.parentNode.replaceChild(newForm, modalForm);
+                    
+                    // Set up the form for ajax submission
+                    setupFormSubmissions();
+                }
+                
+                // Add close functionality - look for various close buttons
+                const closeButtons = bookingModal.querySelectorAll('.close-btn, .close-modal, .modal-close, #closeBookingPopup');
+                closeButtons.forEach(closeBtn => {
+                    // Remove existing event listeners
+                    const newCloseBtn = closeBtn.cloneNode(true);
+                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                    
+                    newCloseBtn.addEventListener('click', function() {
+                        bookingModal.style.display = 'none';
+                    });
+                });
+                
+                // Close when clicking outside the modal content
+                bookingModal.addEventListener('click', function(e) {
+                    if (e.target === bookingModal) {
+                        bookingModal.style.display = 'none';
+                    }
+                });
+            } else {
+                // If no modal is found, show an error
+                console.error('Booking modal not found');
+                showAlert('error', 'Booking form not found. Please try again later.');
+            }
+        });
+    });
+    
+    // Close modals when escape key is pressed
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal, .contact-popup').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+    });
 }
 
 // Add fallback data objects at the beginning of the file before the DOMContentLoaded event
@@ -1600,5 +1933,69 @@ function initHeroSection(data) {
         if (heroDescription && data.description) {
             heroDescription.textContent = data.description;
         }
+    }
+}
+
+function determineFormType(form) {
+    const action = form.getAttribute('action') || '';
+    const formId = form.id || '';
+    const formClasses = form.className || '';
+    
+    // Check if this is a booking form from tour cards
+    const isBookingForm = formId === 'bookingForm' || 
+                         formClasses.includes('booking-form') || 
+                         formClasses.includes('booking-popup-content');
+    
+    // Check if it contains destination or tour information
+    const hasTourDestination = form.querySelector('[name="destination"]') || 
+                              form.querySelector('[name="tourName"]') ||
+                              form.querySelector('#booking-tour');
+    
+    if (action.includes('passport') || formId.includes('passport') || formClasses.includes('passport-form')) {
+        return 'passport';
+    } else if (action.includes('visa') || formId.includes('visa') || formClasses.includes('visa-form')) {
+        return 'visa';
+    } else if (action.includes('flight') || formId.includes('flight') || formClasses.includes('flight-form')) {
+        return 'flight';
+    } else if (action.includes('tour') || formId.includes('tour') || formClasses.includes('tour-form') || 
+              (isBookingForm && hasTourDestination && !action.includes('honeymoon'))) {
+        return 'tour';
+    } else if (action.includes('honeymoon') || formId.includes('honeymoon') || formClasses.includes('honeymoon-form')) {
+        return 'honeymoon';
+    } else if (action.includes('forex') || formId.includes('forex') || formClasses.includes('forex-form')) {
+        return 'forex';
+    } else if (action.includes('contact') || formId.includes('contact') || formClasses.includes('contact-form')) {
+        return 'contact';
+    } else {
+        // For forms in the booking popup, check if we can determine the type
+        if (isBookingForm) {
+            const tourTitle = form.querySelector('#booking-tour')?.value || '';
+            
+            // Check if the form is within a modal
+            const modal = form.closest('.modal, .contact-popup');
+            
+            if (modal) {
+                // Determine if it's a domestic or international tour based on context
+                if (window.location.href.includes('Domestic') || 
+                    document.title.includes('Domestic')) {
+                    console.log('Detected as domestic tour booking form');
+                    return 'tour';
+                } else if (window.location.href.includes('International') || 
+                         document.title.includes('International')) {
+                    console.log('Detected as international tour booking form');
+                    return 'tour';
+                }
+            }
+            
+            // For other booking forms, default to tour if they have destination field
+            if (hasTourDestination) {
+                console.log('Detected as generic tour booking form');
+                return 'tour';
+            }
+        }
+        
+        // Default to contact if we can't determine
+        console.warn('Could not determine form type, defaulting to "contact"');
+        return 'contact';
     }
 }
