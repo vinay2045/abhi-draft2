@@ -943,8 +943,8 @@ function setupFormSubmissions() {
     // Track if submission is in progress to prevent multiple submissions
     let isSubmitting = false;
     
-    // Remove any existing alert on page load
-    document.querySelectorAll('.alert').forEach(alert => alert.remove());
+    // Remove any existing messages on page load
+    document.querySelectorAll('.notification').forEach(msg => msg.remove());
     
     const forms = document.querySelectorAll('form[data-submit="ajax"]');
     
@@ -956,8 +956,8 @@ function setupFormSubmissions() {
             if (isSubmitting) return;
             isSubmitting = true;
             
-            // Remove all existing alerts first
-            document.querySelectorAll('.alert').forEach(alert => alert.remove());
+            // Remove all existing messages first
+            document.querySelectorAll('.notification').forEach(msg => msg.remove());
             
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -993,13 +993,57 @@ function setupFormSubmissions() {
                     return;
                 }
             }
+            // Check required fields for passport form
+            else if (action.includes('/passport')) {
+                const missingFields = [];
+                const requiredFields = ['name', 'email', 'phone', 'passportType', 'appointmentDate', 'city'];
+                
+                requiredFields.forEach(field => {
+                    if (!formObject[field] || formObject[field].trim() === '') {
+                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+                    }
+                });
+                
+                if (missingFields.length > 0) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                    isSubmitting = false;
+                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    return;
+                }
+                
+                // Map form field names to match the API expectations
+                formObject.applicationType = formObject.passportType;
+                formObject.expectedDate = formObject.appointmentDate;
+                formObject.urgency = 'Normal';  // Default value
+                formObject.numberOfApplicants = '1';  // Default value
+            }
+            // Check required fields for visa form
+            else if (action.includes('/visa')) {
+                const missingFields = [];
+                const requiredFields = ['name', 'email', 'phone', 'destination', 'visaType', 'travelDate'];
+                
+                requiredFields.forEach(field => {
+                    if (!formObject[field] || formObject[field].trim() === '') {
+                        missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+                    }
+                });
+                
+                if (missingFields.length > 0) {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.disabled = false;
+                    isSubmitting = false;
+                    showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
+                    return;
+                }
+            }
             
             try {
                 const response = await fetch(action, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': 'travelsystem2025'
+                        'x-api-key': 'travel_api_key_2024'
                     },
                     body: JSON.stringify(formObject)
                 });
@@ -1041,117 +1085,73 @@ function setupFormSubmissions() {
 }
 
 /**
- * Show an alert message to the user
+ * Show a notification message at the top of the screen (React/Next.js style)
  * @param {string} type - 'success' or 'error'
  * @param {string} message - The message to display
  */
 function showAlert(type, message) {
-    // First, remove any existing alerts to prevent duplicates
-    const existingAlerts = document.querySelectorAll('.alert');
-    if (existingAlerts.length > 0) {
-        existingAlerts.forEach(alert => {
-            document.body.removeChild(alert);
-        });
-    }
-    
-    // Create new alert
-    const alertBox = document.createElement('div');
-    alertBox.className = `alert alert-${type}`;
-    alertBox.innerHTML = `
-        <div class="alert-content">
-            <i class='bx ${type === 'success' ? 'bx-check-circle' : 'bx-x-circle'}'></i>
-            <span>${message}</span>
-        </div>
-        <button class="alert-close">&times;</button>
-    `;
-    
-    // Add to document
-    document.body.appendChild(alertBox);
-    
-    // Add close button functionality
-    const closeBtn = alertBox.querySelector('.alert-close');
-    closeBtn.addEventListener('click', () => {
-        if (document.body.contains(alertBox)) {
-            document.body.removeChild(alertBox);
+    // First remove any existing notifications
+    document.querySelectorAll('.notification').forEach(notification => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
         }
     });
     
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        if (document.body.contains(alertBox)) {
-            document.body.removeChild(alertBox);
-        }
-    }, 5000);
-    
-    // Add styles if they don't exist
-    if (!document.querySelector('#alert-styles')) {
-        const style = document.createElement('style');
-        style.id = 'alert-styles';
-        style.innerHTML = `
-            .alert {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 5px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                min-width: 300px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10000;
-                animation: slideIn 0.3s ease forwards;
-            }
-            
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-            
-            .alert-success {
-                background-color: #d4edda;
-                color: #155724;
-                border-left: 4px solid #28a745;
-            }
-            
-            .alert-error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border-left: 4px solid #dc3545;
-            }
-            
-            .alert-content {
-                display: flex;
-                align-items: center;
-            }
-            
-            .alert-content i {
-                margin-right: 10px;
-                font-size: 1.5rem;
-            }
-            
-            .alert-close {
-                background: none;
-                border: none;
-                color: inherit;
-                font-size: 1.5rem;
-                cursor: pointer;
-                padding: 0;
-                margin-left: 15px;
-                opacity: 0.7;
-            }
-            
-            .alert-close:hover {
-                opacity: 1;
-            }
-        `;
-        document.head.appendChild(style);
+    // Create a notification container if it doesn't exist
+    let notificationContainer = document.getElementById('notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.position = 'fixed';
+        notificationContainer.style.top = '0';
+        notificationContainer.style.left = '0';
+        notificationContainer.style.right = '0';
+        notificationContainer.style.display = 'flex';
+        notificationContainer.style.justifyContent = 'center';
+        notificationContainer.style.zIndex = '10000';
+        document.body.appendChild(notificationContainer);
     }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Style the notification
+    notification.style.backgroundColor = type === 'success' ? '#d1e7dd' : '#f8d7da';
+    notification.style.color = type === 'success' ? '#0f5132' : '#842029';
+    notification.style.padding = '12px 20px';
+    notification.style.margin = '12px';
+    notification.style.borderRadius = '4px';
+    notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+    notification.style.maxWidth = '80%';
+    notification.style.textAlign = 'center';
+    notification.style.opacity = '0';
+    notification.style.transition = 'opacity 0.3s ease';
+    notification.style.fontWeight = '500';
+    
+    // Add to container
+    notificationContainer.appendChild(notification);
+    
+    // Trigger animation
+    setTimeout(() => {
+        notification.style.opacity = '1';
+    }, 10);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+            
+            // Remove the container if it's empty
+            if (notificationContainer.children.length === 0 && document.body.contains(notificationContainer)) {
+                document.body.removeChild(notificationContainer);
+            }
+        }, 300);
+    }, 5000);
 }
 
 // Add fallback data objects at the beginning of the file before the DOMContentLoaded event
