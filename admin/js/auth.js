@@ -4,7 +4,7 @@
  */
 
 // Constants
-const API_URL = '/api';
+const API_URL = '/api'; // Base API path
 const TOKEN_KEY = 'admin_token';
 const USER_KEY = 'admin_user';
 
@@ -16,7 +16,7 @@ const USER_KEY = 'admin_user';
  */
 async function login(username, password) {
     try {
-        const response = await fetch(`${API_URL}/auth/admin-login`, {
+        const response = await fetch(`/api/auth/admin-login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -151,8 +151,28 @@ async function apiRequest(endpoint, options = {}) {
     const authHeaders = getAuthHeaders();
     options.headers = { ...options.headers, ...authHeaders };
     
+    // Normalize endpoint by ensuring it starts with a slash
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    
+    // Construct the full URL
+    const baseURL = window.location.origin;
+    const port = baseURL.includes('localhost') ? '7777' : ''; // Use port 7777 for localhost
+    const serverURL = port ? `${baseURL.split(':')[0]}:${baseURL.split(':')[1]}:${port}` : baseURL;
+    
+    // Build the complete URL - fix the URL construction
+    let url;
+    if (normalizedEndpoint.startsWith('/admin/')) {
+        // For admin endpoints, KEEP 'admin' in the path
+        url = `${serverURL}${API_URL}/admin${normalizedEndpoint.replace('/admin', '')}`;
+    } else {
+        // For non-admin endpoints, use as is
+        url = `${serverURL}${API_URL}${normalizedEndpoint}`;
+    }
+    
+    console.log(`Making API request to: ${url}`);
+    
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, options);
+        const response = await fetch(url, options);
         
         // Handle 401 Unauthorized (expired token)
         if (response.status === 401) {
@@ -160,9 +180,10 @@ async function apiRequest(endpoint, options = {}) {
             throw new Error('Your session has expired. Please login again.');
         }
         
-        // Check if the response is 404 (Not Found) or other error status
+        // Handle other error statuses
         if (!response.ok) {
             const contentType = response.headers.get('content-type');
+            
             if (contentType && contentType.includes('application/json')) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Request failed with status ${response.status}`);
@@ -176,8 +197,7 @@ async function apiRequest(endpoint, options = {}) {
         
         if (contentType && contentType.includes('application/json')) {
             // Parse JSON response
-            const data = await response.json();
-            return data;
+            return await response.json();
         } else {
             // For non-JSON responses
             const text = await response.text();

@@ -58,158 +58,75 @@ router.get('/stats', isAdmin, async (req, res) => {
 });
 
 // @route   GET /api/admin/recent-submissions
-// @desc    Get recent submissions from all forms
+// @desc    Get recent submissions (last 5 from each type)
 // @access  Private (Admin only)
 router.get('/recent-submissions', isAdmin, async (req, res) => {
     try {
-        // Get most recent submissions from each collection
+        // Get 5 most recent submissions of each type
         const contacts = await ContactFormSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email createdAt')
             .lean();
-
+            
         const flights = await FlightSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone from to departureDate createdAt')
             .lean();
-
+            
         const domesticTours = await TourSubmission.find({ tourType: 'domestic' })
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone destination createdAt')
             .lean();
-
+            
         const internationalTours = await TourSubmission.find({ tourType: 'international' })
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone destination createdAt')
             .lean();
-
+            
         const visas = await VisaSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone destination visaType createdAt')
             .lean();
-
+            
         const passports = await PassportSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone applicationType createdAt')
             .lean();
-
+            
         const forexes = await ForexSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone serviceType currencyFrom currencyTo createdAt')
             .lean();
-
+            
         const honeymoons = await HoneymoonSubmission.find()
             .sort({ createdAt: -1 })
             .limit(5)
-            .select('name email phone destination duration budget createdAt')
             .lean();
-
-        // Add type identifier to each document
-        const formattedContacts = contacts.map(contact => ({
-            id: contact._id,
-            name: contact.name,
-            email: contact.email,
-            type: 'contact',
-            createdAt: contact.createdAt
-        }));
-
-        const formattedFlights = flights.map(flight => ({
-            id: flight._id,
-            name: flight.name,
-            email: flight.email,
-            phone: flight.phone,
-            details: `${flight.from} to ${flight.to}`,
-            type: 'flight',
-            createdAt: flight.createdAt
-        }));
-
-        const formattedDomesticTours = domesticTours.map(tour => ({
-            id: tour._id,
-            name: tour.name,
-            email: tour.email,
-            phone: tour.phone,
-            details: tour.destination,
-            type: 'domestic',
-            createdAt: tour.createdAt
-        }));
-
-        const formattedInternationalTours = internationalTours.map(tour => ({
-            id: tour._id,
-            name: tour.name,
-            email: tour.email,
-            phone: tour.phone,
-            details: tour.destination,
-            type: 'international',
-            createdAt: tour.createdAt
-        }));
-
-        const formattedVisas = visas.map(visa => ({
-            id: visa._id,
-            name: visa.name,
-            email: visa.email,
-            phone: visa.phone,
-            details: `${visa.destination} (${visa.visaType})`,
-            type: 'visa',
-            createdAt: visa.createdAt
-        }));
-
-        const formattedPassports = passports.map(passport => ({
-            id: passport._id,
-            name: passport.name,
-            email: passport.email,
-            phone: passport.phone,
-            details: passport.applicationType,
-            type: 'passport',
-            createdAt: passport.createdAt
-        }));
-
-        const formattedForexes = forexes.map(forex => ({
-            id: forex._id,
-            name: forex.name,
-            email: forex.email,
-            phone: forex.phone,
-            details: `${forex.currencyFrom} to ${forex.currencyTo}`,
-            type: 'forex',
-            createdAt: forex.createdAt
-        }));
-
-        const formattedHoneymoons = honeymoons.map(honeymoon => ({
-            id: honeymoon._id,
-            name: honeymoon.name,
-            email: honeymoon.email,
-            phone: honeymoon.phone,
-            details: `${honeymoon.destination} (${honeymoon.duration})`,
-            type: 'honeymoon',
-            createdAt: honeymoon.createdAt
-        }));
-
-        // Combine all submissions and sort by date (newest first)
-        const allSubmissions = [
-            ...formattedContacts,
-            ...formattedFlights,
-            ...formattedDomesticTours,
-            ...formattedInternationalTours,
-            ...formattedVisas,
-            ...formattedPassports,
-            ...formattedForexes,
-            ...formattedHoneymoons
-        ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        // Return the 10 most recent submissions
+        
+        // Format all submissions with their types
+        const formattedSubmissions = [
+            ...contacts.map(doc => ({ ...doc, id: doc._id.toString(), type: 'contact' })),
+            ...flights.map(doc => ({ ...doc, id: doc._id.toString(), type: 'flight' })),
+            ...domesticTours.map(doc => ({ ...doc, id: doc._id.toString(), type: 'domestic' })),
+            ...internationalTours.map(doc => ({ ...doc, id: doc._id.toString(), type: 'international' })),
+            ...visas.map(doc => ({ ...doc, id: doc._id.toString(), type: 'visa' })),
+            ...passports.map(doc => ({ ...doc, id: doc._id.toString(), type: 'passport' })),
+            ...forexes.map(doc => ({ ...doc, id: doc._id.toString(), type: 'forex' })),
+            ...honeymoons.map(doc => ({ ...doc, id: doc._id.toString(), type: 'honeymoon' }))
+        ];
+        
+        // Sort by date descending
+        formattedSubmissions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Return response
         res.json({
             success: true,
-            submissions: allSubmissions.slice(0, 10)
+            submissions: formattedSubmissions
         });
-    } catch (err) {
-        console.error('Error fetching recent submissions:', err.message);
-        res.status(500).json({ 
+        
+    } catch (error) {
+        console.error('Error fetching recent submissions:', error);
+        res.status(500).json({
             success: false,
             message: 'Server error while fetching recent submissions'
         });
@@ -822,5 +739,471 @@ router.delete('/submission/:type/:id', isAdmin, async (req, res) => {
         });
     }
 });
+
+// @route   GET /api/admin/submissions/all
+// @desc    Get all submissions with filtering and pagination
+// @access  Private (Admin only)
+router.get('/submissions/all', isAdmin, async (req, res) => {
+    try {
+        console.log('Received request to /submissions/all with params:', req.query);
+        
+        // Parse query parameters with defaults
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        // Define all valid submission types
+        const validTypes = ['all', 'contact', 'flight', 'domestic', 'international', 'visa', 'passport', 'forex', 'honeymoon'];
+        
+        // Get type parameter and set default if not provided or invalid
+        let type = req.query.type || 'all';
+        console.log(`Received type parameter: "${type}"`);
+        
+        // Force convert type to string to ensure proper validation
+        type = String(type).toLowerCase();
+        
+        // Always accept 'all' as a valid type, regardless of case
+        if (type.toLowerCase() === 'all') {
+            type = 'all';
+            console.log('Type parameter is "all", proceeding with all types');
+        } else if (!validTypes.includes(type)) {
+            console.log(`Type parameter "${type}" is invalid, defaulting to "all"`);
+            type = 'all';
+        } else {
+            console.log(`Using valid type: "${type}"`);
+        }
+        
+        // Other filters
+        const status = req.query.status || 'all';
+        const fromDate = req.query.fromDate ? new Date(req.query.fromDate) : null;
+        const toDate = req.query.toDate ? new Date(req.query.toDate) : null;
+        const search = req.query.search || '';
+        
+        // Set end of day for toDate
+        if (toDate) {
+            toDate.setHours(23, 59, 59, 999);
+        }
+        
+        // Build date filter
+        const dateFilter = {};
+        if (fromDate && toDate) {
+            dateFilter.createdAt = { $gte: fromDate, $lte: toDate };
+        } else if (fromDate) {
+            dateFilter.createdAt = { $gte: fromDate };
+        } else if (toDate) {
+            dateFilter.createdAt = { $lte: toDate };
+        }
+        
+        // Build search filter
+        const searchFilter = search ? {
+            $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ]
+        } : {};
+        
+        // Build status filter
+        const statusFilter = {};
+        if (status === 'read') {
+            statusFilter.$or = [
+                { status: 'read' },
+                { isRead: true }
+            ];
+        } else if (status === 'new') {
+            statusFilter.$or = [
+                { status: { $ne: 'read' } },
+                { status: { $exists: false }, isRead: { $ne: true } },
+                { status: { $exists: false }, isRead: { $exists: false } }
+            ];
+        }
+        
+        // Combine all filters
+        const baseFilter = {
+            ...dateFilter,
+            ...searchFilter,
+            ...(Object.keys(statusFilter).length > 0 ? statusFilter : {})
+        };
+        
+        console.log('Using base filter:', JSON.stringify(baseFilter));
+        
+        // Define models to query based on type
+        let modelsToQuery = [];
+        
+        if (type === 'all') {
+            // Query all models
+            modelsToQuery = [
+                { model: ContactFormSubmission, type: 'contact' },
+                { model: FlightSubmission, type: 'flight' },
+                { model: TourSubmission, tourType: 'domestic', type: 'domestic' },
+                { model: TourSubmission, tourType: 'international', type: 'international' },
+                { model: VisaSubmission, type: 'visa' },
+                { model: PassportSubmission, type: 'passport' },
+                { model: ForexSubmission, type: 'forex' },
+                { model: HoneymoonSubmission, type: 'honeymoon' }
+            ];
+            console.log('Querying all submission types');
+        } else if (type === 'domestic' || type === 'international') {
+            // Query specific tour type
+            modelsToQuery = [
+                { model: TourSubmission, tourType: type, type }
+            ];
+            console.log(`Querying ${type} tour submissions only`);
+        } else {
+            // Map type to model
+            const modelMap = {
+                'contact': ContactFormSubmission,
+                'flight': FlightSubmission,
+                'visa': VisaSubmission,
+                'passport': PassportSubmission,
+                'forex': ForexSubmission,
+                'honeymoon': HoneymoonSubmission
+            };
+            
+            if (modelMap[type]) {
+                modelsToQuery = [{ model: modelMap[type], type }];
+                console.log(`Querying ${type} submissions only`);
+            } else {
+                // Fallback to all if something went wrong
+                console.log(`No model found for type "${type}", defaulting to all types`);
+                modelsToQuery = [
+                    { model: ContactFormSubmission, type: 'contact' },
+                    { model: FlightSubmission, type: 'flight' },
+                    { model: TourSubmission, tourType: 'domestic', type: 'domestic' },
+                    { model: TourSubmission, tourType: 'international', type: 'international' },
+                    { model: VisaSubmission, type: 'visa' },
+                    { model: PassportSubmission, type: 'passport' },
+                    { model: ForexSubmission, type: 'forex' },
+                    { model: HoneymoonSubmission, type: 'honeymoon' }
+                ];
+            }
+        }
+        
+        // Array to hold all submissions and total count
+        let allSubmissions = [];
+        let totalCount = 0;
+        
+        // Query each model in parallel
+        const modelQueries = modelsToQuery.map(async ({ model, type, tourType }) => {
+            try {
+                // Clone base filter
+                const filter = { ...baseFilter };
+                
+                // Add tour type filter if applicable
+                if (tourType) {
+                    filter.tourType = tourType;
+                }
+                
+                // Count total matching documents
+                const count = await model.countDocuments(filter);
+                
+                // Only fetch documents if count > 0
+                if (count > 0) {
+                    // Fetch documents with pagination
+                    const submissions = await model.find(filter)
+                        .sort({ createdAt: -1 })
+                        .skip(modelsToQuery.length > 1 ? 0 : skip) // Skip only for specific type queries
+                        .limit(modelsToQuery.length > 1 ? 1000 : limit) // For multiple models, get more and paginate after combining
+                        .lean();
+                    
+                    // Format submissions with type and convert _id to id for consistency
+                    const formattedSubmissions = submissions.map(doc => ({
+                        ...doc,
+                        id: doc._id.toString(),
+                        type
+                    }));
+                    
+                    console.log(`Found ${count} ${type} submissions`);
+                    
+                    return {
+                        submissions: formattedSubmissions,
+                        count
+                    };
+                }
+                
+                console.log(`No ${type} submissions found matching filters`);
+                return { submissions: [], count: 0 };
+            } catch (error) {
+                console.error(`Error querying ${type} submissions:`, error.message);
+                return { submissions: [], count: 0 };
+            }
+        });
+        
+        // Wait for all queries to complete
+        const results = await Promise.all(modelQueries);
+        
+        // Combine results
+        results.forEach(result => {
+            allSubmissions = [...allSubmissions, ...result.submissions];
+            totalCount += result.count;
+        });
+        
+        console.log(`Total submissions found across all types: ${totalCount}`);
+        
+        // Sort all submissions by date descending
+        allSubmissions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Apply final pagination for multiple models
+        const paginatedSubmissions = modelsToQuery.length > 1 
+            ? allSubmissions.slice(skip, skip + limit)
+            : allSubmissions;
+        
+        console.log(`Returning ${paginatedSubmissions.length} submissions for page ${page}`);
+        
+        // Return response
+        res.json({
+            success: true,
+            submissions: paginatedSubmissions,
+            pagination: {
+                total: totalCount,
+                page,
+                limit,
+                pages: Math.ceil(totalCount / limit) || 1
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error in /submissions/all endpoint:', error);
+        
+        // Return a friendly error response
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching submissions',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Add route for exporting submissions as CSV
+router.get('/export/submissions', isAdmin, async (req, res) => {
+    try {
+        // Parse query parameters
+        // Validate and sanitize type parameter
+        let type = req.query.type || 'all';
+        // List of valid types
+        const validTypes = ['all', 'contact', 'flight', 'domestic', 'international', 'visa', 'passport', 'forex', 'honeymoon'];
+        // If type is invalid, default to 'all'
+        if (!validTypes.includes(type)) {
+            console.warn(`Invalid submission type received for export: "${type}". Defaulting to "all".`);
+            type = 'all';
+        }
+        
+        const status = req.query.status || 'all';
+        const fromDate = req.query.fromDate ? new Date(req.query.fromDate) : null;
+        const toDate = req.query.toDate ? new Date(req.query.toDate) : null;
+        const search = req.query.search || '';
+        const format = req.query.format || 'csv'; // Currently only CSV is supported
+        
+        if (toDate) {
+            // Set to end of day
+            toDate.setHours(23, 59, 59, 999);
+        }
+        
+        // Prepare base query for date filtering
+        const dateQuery = {};
+        if (fromDate && toDate) {
+            dateQuery.createdAt = { $gte: fromDate, $lte: toDate };
+        } else if (fromDate) {
+            dateQuery.createdAt = { $gte: fromDate };
+        } else if (toDate) {
+            dateQuery.createdAt = { $lte: toDate };
+        }
+        
+        // Prepare search query
+        const searchQuery = search ? {
+            $or: [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ]
+        } : {};
+        
+        // Combine date and search queries
+        const baseQuery = { ...dateQuery, ...searchQuery };
+        
+        // Add status filtering if needed
+        const statusQuery = {};
+        if (status === 'read') {
+            statusQuery.$or = [{ status: 'read' }, { isRead: true }];
+        } else if (status === 'new') {
+            statusQuery.$or = [
+                { status: { $ne: 'read' } },
+                { status: { $exists: false }, isRead: { $ne: true } },
+                { status: { $exists: false }, isRead: { $exists: false } }
+            ];
+        }
+        
+        // Final query combining all conditions
+        const finalQuery = { ...baseQuery, ...(Object.keys(statusQuery).length ? statusQuery : {}) };
+        
+        // Define all models and their corresponding types
+        const modelMap = {
+            'contact': { model: ContactFormSubmission, type: 'contact' },
+            'flight': { model: FlightSubmission, type: 'flight' },
+            'domestic': { model: TourSubmission, type: 'domestic' },
+            'international': { model: TourSubmission, type: 'international' },
+            'visa': { model: VisaSubmission, type: 'visa' },
+            'passport': { model: PassportSubmission, type: 'passport' },
+            'forex': { model: ForexSubmission, type: 'forex' },
+            'honeymoon': { model: HoneymoonSubmission, type: 'honeymoon' }
+        };
+        
+        // Determine which models to query based on the type
+        let models = [];
+        if (type === 'all') {
+            // Query all models
+            models = Object.values(modelMap);
+        } else {
+            // Query specific model - we already validated that type is valid
+            models = [modelMap[type]];
+        }
+        
+        // Special handling for domestic/international tours
+        if (type === 'domestic' || type === 'international') {
+            finalQuery.tourType = type;
+        }
+        
+        // Execute queries for each model to get all matching submissions
+        const aggregatedResults = [];
+        
+        for (const { model, type } of models) {
+            // Skip to next iteration if model is undefined
+            if (!model) {
+                console.warn(`Model for type "${type}" is undefined. Skipping export.`);
+                continue;
+            }
+            
+            try {
+                // Clone query for this model
+                const modelQuery = { ...finalQuery };
+                
+                // Execute find query without pagination to get all results
+                const submissions = await model.find(modelQuery)
+                    .sort({ createdAt: -1 })
+                    .catch(err => {
+                        console.error(`Error finding submissions for type "${type}" during export:`, err);
+                        return []; // Return empty array if find fails
+                    });
+                
+                // Add type property to each submission
+                submissions.forEach(submission => {
+                    try {
+                        const submissionObj = submission.toObject();
+                        submissionObj.type = type;
+                        submissionObj.id = submissionObj._id || submissionObj.id;
+                        aggregatedResults.push(submissionObj);
+                    } catch (err) {
+                        console.error(`Error processing submission of type "${type}" during export:`, err);
+                    }
+                });
+            } catch (err) {
+                console.error(`Error processing model for type "${type}" during export:`, err);
+                // Continue to the next model
+            }
+        }
+        
+        // Sort aggregated results by date
+        aggregatedResults.sort((a, b) => {
+            try {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            } catch (err) {
+                console.error("Error sorting during export:", err);
+                return 0; // Return 0 if date comparison fails
+            }
+        });
+        
+        // Format as CSV
+        if (format === 'csv') {
+            try {
+                // Define CSV headers
+                const csvHeaders = [
+                    'ID', 'Type', 'Name', 'Email', 'Phone', 'Status', 
+                    'Date', 'Time', 'Subject', 'Message', 'Destination', 
+                    'Travel Date', 'Duration', 'Budget', 'Number of Travelers'
+                ];
+                
+                // Create CSV content
+                let csvContent = csvHeaders.join(',') + '\n';
+                
+                // Add each submission as a row
+                aggregatedResults.forEach(submission => {
+                    try {
+                        // Format date and time
+                        const createdAt = new Date(submission.createdAt);
+                        const formattedDate = createdAt.toLocaleDateString();
+                        const formattedTime = createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        // Get status
+                        const status = (submission.status === 'read' || submission.isRead) ? 'Read' : 'New';
+                        
+                        // Create a row with common fields
+                        const row = [
+                            submission._id,
+                            submission.type,
+                            escapeCsvField(submission.name || ''),
+                            escapeCsvField(submission.email || ''),
+                            escapeCsvField(submission.phone || ''),
+                            status,
+                            formattedDate,
+                            formattedTime,
+                            escapeCsvField(submission.subject || ''),
+                            escapeCsvField(submission.message || '')
+                        ];
+                        
+                        // Add type-specific fields
+                        row.push(escapeCsvField(submission.destination || submission.tourDestination || ''));
+                        row.push(escapeCsvField(submission.departureDate || submission.travelDate || ''));
+                        row.push(escapeCsvField(submission.duration || ''));
+                        row.push(escapeCsvField(submission.budget || ''));
+                        row.push(escapeCsvField(submission.travelers || submission.numberOfTravelers || ''));
+                        
+                        // Add row to CSV content
+                        csvContent += row.join(',') + '\n';
+                    } catch (err) {
+                        console.error("Error processing row for CSV export:", err);
+                        // Skip this row and continue
+                    }
+                });
+                
+                // Set response headers for CSV download
+                res.setHeader('Content-Type', 'text/csv');
+                res.setHeader('Content-Disposition', `attachment; filename="submissions_export_${new Date().toISOString().split('T')[0]}.csv"`);
+                
+                // Send CSV content
+                return res.send(csvContent);
+            } catch (err) {
+                console.error("Error generating CSV content:", err);
+                return res.status(500).json({ success: false, message: 'Error generating CSV export' });
+            }
+        }
+        
+        // If format is not supported
+        return res.status(400).json({ success: false, message: 'Unsupported export format' });
+        
+    } catch (error) {
+        console.error('Error exporting submissions:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error during export',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Helper function to escape CSV fields
+function escapeCsvField(field) {
+    if (field === null || field === undefined) return '';
+    
+    // Convert to string
+    const stringField = String(field);
+    
+    // Check if we need to escape this field
+    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        // Escape double quotes with double quotes and wrap in quotes
+        return '"' + stringField.replace(/"/g, '""') + '"';
+    }
+    
+    return stringField;
+}
 
 module.exports = router; 

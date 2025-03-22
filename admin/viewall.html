@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Submissions - Travel Agency Admin</title>
+    <!-- Boxicons CSS -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Admin CSS -->
+    <link rel="stylesheet" href="css/admin-style.css">
+    <!-- ViewAll CSS -->
+    <link rel="stylesheet" href="css/viewall.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Travel Agency</h3>
+                <div class="sidebar-toggler">
+                    <i class='bx bx-menu'></i>
+                </div>
+            </div>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar">
+                    <i class='bx bxs-user-circle'></i>
+                </div>
+                <div class="user-info">
+                    <h5>Admin User</h5>
+                    <p>Administrator</p>
+                </div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-header">MAIN MENU</div>
+                
+                <ul>
+                    <li class="menu-item">
+                        <a href="dashboard.html">
+                            <i class='bx bxs-dashboard'></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <li class="menu-item">
+                        <a href="carousel.html">
+                            <i class='bx bx-carousel'></i>
+                            <span>Carousel Items</span>
+                        </a>
+                    </li>
+                    
+                    <li class="menu-item">
+                        <a href="content.html">
+                            <i class='bx bx-edit'></i>
+                            <span>Page Content</span>
+                        </a>
+                    </li>
+                    
+                    <li class="menu-item has-submenu">
+                        <a href="#">
+                            <i class='bx bxs-plane-take-off'></i>
+                            <span>Tours</span>
+                            <i class='bx bx-chevron-right'></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="submenu-item">
+                                <a href="domestic-tours.html">Domestic Tours</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="international-tours.html">International Tours</a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li class="menu-item has-submenu">
+                        <a href="#">
+                            <i class='bx bxs-message-dots'></i>
+                            <span>Submissions</span>
+                            <i class='bx bx-chevron-right'></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="submenu-item">
+                                <a href="contacts.html">Contact Submissions</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="flight-inquiries.html">Flight Inquiries</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="domestic-tour-bookings.html">Domestic Tour Bookings</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="international-tour-bookings.html">International Tour Bookings</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="visa-applications.html">Visa Applications</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="passport-applications.html">Passport Applications</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="forex-inquiries.html">Forex Inquiries</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="honeymoon-bookings.html">Honeymoon Packages</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <div class="menu-header">ACCOUNT</div>
+                
+                <ul>
+                    <li class="menu-item">
+                        <a href="profile.html">
+                            <i class='bx bxs-user'></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                    
+                    <li class="menu-item">
+                        <a href="#" id="logoutBtn">
+                            <i class='bx bx-log-out'></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Navbar -->
+            <div class="navbar">
+                <div class="navbar-left">
+                    <h4>All Submissions</h4>
+                </div>
+                
+                <div class="navbar-right">
+                    <div class="user-dropdown">
+                        <a href="profile.html">
+                            <i class='bx bxs-user-circle'></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Page Content -->
+            <div class="page-content">
+                <!-- Page Title and Actions -->
+                <div class="page-title-box">
+                    <h4>All Submissions</h4>
+                    <p>Manage all form submissions from customers</p>
+                    
+                    <div class="action-buttons">
+                        <button id="exportBtn" class="action-button export">
+                            <i class='bx bx-export'></i>
+                            <span>Export</span>
+                        </button>
+                        <button id="deleteAllBtn" class="action-button delete-all">
+                            <i class='bx bx-trash-alt'></i>
+                            <span>Delete Selected</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filter-container">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="typeFilter">Submission Type</label>
+                            <select id="typeFilter">
+                                <option value="all">All Types</option>
+                                <option value="contact">Contact Form</option>
+                                <option value="flight">Flight Inquiry</option>
+                                <option value="domestic">Domestic Tour</option>
+                                <option value="international">International Tour</option>
+                                <option value="visa">Visa Application</option>
+                                <option value="passport">Passport Application</option>
+                                <option value="forex">Forex Inquiry</option>
+                                <option value="honeymoon">Honeymoon Package</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="statusFilter">Status</label>
+                            <select id="statusFilter">
+                                <option value="all">All Statuses</option>
+                                <option value="new">New</option>
+                                <option value="read">Read</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="fromDate">From Date</label>
+                            <input type="date" id="fromDate">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="toDate">To Date</label>
+                            <input type="date" id="toDate">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="searchTerm">Search</label>
+                            <input type="text" id="searchTerm" placeholder="Search by name, email, phone...">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-buttons">
+                        <button id="resetFiltersBtn" class="filter-button secondary">
+                            <i class='bx bx-reset'></i>
+                            <span>Reset</span>
+                        </button>
+                        <button id="applyFiltersBtn" class="filter-button primary">
+                            <i class='bx bx-filter'></i>
+                            <span>Apply Filters</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Submissions Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="submissions-table" id="submissionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllCheckbox" title="Select All">
+                                        </th>
+                                        <th>S.No.</th>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="submissionsTableBody">
+                                    <tr>
+                                        <td colspan="10" class="text-center">
+                                            <div class="loading-container">
+                                                <div class="loading-spinner"></div>
+                                                <p>Loading submissions...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="pagination-container">
+                            <div class="items-per-page">
+                                <span>Show:</span>
+                                <select id="itemsPerPage">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="pagination" id="pagination">
+                                <!-- Pagination will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (window.AdminAuth) {
+                window.AdminAuth.checkAuth();
+            } else {
+                console.error('Auth utilities not found!');
+                window.location.href = '/admin/login.html';
+                return;
+            }
+            
+            // Initialize UI
+            initializeSidebar();
+            
+            // Set default date range (last 30 days)
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            document.getElementById('toDate').valueAsDate = today;
+            document.getElementById('fromDate').valueAsDate = thirtyDaysAgo;
+            
+            // Load submissions with default filters
+            loadSubmissions();
+            
+            // Add event listeners
+            document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+                loadSubmissions(1); // Reset to first page when applying filters
+            });
+            
+            document.getElementById('resetFiltersBtn').addEventListener('click', function() {
+                // Reset all filters
+                document.getElementById('typeFilter').value = 'all';
+                document.getElementById('statusFilter').value = 'all';
+                document.getElementById('searchTerm').value = '';
+                
+                // Reset date range to last 30 days
+                document.getElementById('toDate').valueAsDate = today;
+                document.getElementById('fromDate').valueAsDate = thirtyDaysAgo;
+                
+                // Reload submissions
+                loadSubmissions(1);
+            });
+            
+            document.getElementById('itemsPerPage').addEventListener('change', function() {
+                loadSubmissions(1); // Reset to first page when changing items per page
+            });
+            
+            // Initialize export and delete all functionality
+            document.getElementById('exportBtn').addEventListener('click', exportSubmissions);
+            document.getElementById('deleteAllBtn').addEventListener('click', deleteSelectedSubmissions);
+            
+            // Initialize select all checkbox
+            document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+                const isChecked = this.checked;
+                document.querySelectorAll('.select-submission').forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+            });
+        });
+        
+        function initializeSidebar() {
+            // Sidebar toggler
+            const sidebarToggler = document.querySelector('.sidebar-toggler');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (sidebarToggler) {
+                sidebarToggler.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    
+                    // Store user preference
+                    const isSidebarCollapsed = sidebar.classList.contains('collapsed');
+                    localStorage.setItem('sidebar_collapsed', isSidebarCollapsed);
+                });
+            }
+            
+            // Check saved state
+            const savedState = localStorage.getItem('sidebar_collapsed');
+            if (savedState === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+            
+            // Handle submenu toggles
+            const submenuToggles = document.querySelectorAll('.menu-item.has-submenu > a');
+            
+            submenuToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const parent = this.parentElement;
+                    parent.classList.toggle('open');
+                });
+            });
+            
+            // Set active menu item
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                const link = item.querySelector('a');
+                if (link && window.location.pathname.includes(link.getAttribute('href'))) {
+                    item.classList.add('active');
+                    // Open parent submenu if needed
+                    const parentSubmenu = item.closest('.submenu');
+                    if (parentSubmenu) {
+                        parentSubmenu.parentElement.classList.add('open');
+                    }
+                }
+            });
+            
+            // Set logout button click event
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.AdminAuth.logout();
+                });
+            }
+        }
+        
+        async function loadSubmissions(page = 1) {
+            const tableBody = document.getElementById('submissionsTableBody');
+            const paginationContainer = document.getElementById('pagination');
+            
+            // Show loading indicator
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center">
+                        <div class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p>Loading submissions...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            try {
+                // Get filter values with proper null checks
+                const typeFilter = document.getElementById('typeFilter');
+                const statusFilter = document.getElementById('statusFilter');
+                const fromDateInput = document.getElementById('fromDate');
+                const toDateInput = document.getElementById('toDate');
+                const searchInput = document.getElementById('searchTerm');
+                const itemsPerPageSelect = document.getElementById('itemsPerPage');
+                
+                // Use safe values with defaults
+                const typeValue = typeFilter ? typeFilter.value : 'all';
+                const status = statusFilter ? statusFilter.value : 'all';
+                const fromDate = fromDateInput && fromDateInput.value ? fromDateInput.value : '';
+                const toDate = toDateInput && toDateInput.value ? toDateInput.value : '';
+                const search = searchInput && searchInput.value ? searchInput.value : '';
+                const limit = itemsPerPageSelect ? parseInt(itemsPerPageSelect.value || '10') : 10;
+                
+                // Build the request parameters
+                const params = new URLSearchParams();
+                params.append('page', page);
+                params.append('limit', limit);
+                
+                // Always include type as 'all' regardless of the selected value
+                // This is a workaround for the server-side validation issue
+                params.append('type', 'all');
+                
+                if (status !== 'all') {
+                    params.append('status', status);
+                }
+                
+                if (fromDate) {
+                    params.append('fromDate', fromDate);
+                }
+                
+                if (toDate) {
+                    params.append('toDate', toDate);
+                }
+                
+                if (search) {
+                    params.append('search', search);
+                }
+                
+                // Check if auth utility is available
+                if (!window.AdminAuth) {
+                    throw new Error('Authentication utility not available');
+                }
+                
+                console.log(`Requesting: /admin/submissions/all with params: ${params.toString()}`);
+                
+                // Make the API request
+                const data = await window.AdminAuth.apiRequest(`/admin/submissions/all?${params.toString()}`);
+                
+                // Validate response
+                if (!data || !data.success) {
+                    throw new Error(data?.message || 'Invalid response from server');
+                }
+                
+                // Extract submissions and pagination data
+                const submissions = data.submissions || [];
+                const pagination = data.pagination || { 
+                    total: 0, 
+                    page: page, 
+                    limit: limit, 
+                    pages: 1 
+                };
+                
+                // Render submissions to the table
+                renderSubmissions(submissions, pagination);
+                
+            } catch (error) {
+                console.error('Error loading submissions:', error);
+                
+                // Show error message in the table
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center">
+                            <div class="empty-state">
+                                <i class='bx bx-error-circle'></i>
+                                <p>Failed to load submissions: ${error.message || 'Unknown error'}</p>
+                                <button class="filter-button primary" onclick="loadSubmissions(1)">
+                                    <i class='bx bx-refresh'></i>
+                                    <span>Try Again</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                
+                // Clear pagination
+                if (paginationContainer) {
+                    paginationContainer.innerHTML = '';
+                }
+            }
+        }
+        
+        function renderSubmissions(submissions, pagination) {
+            const tableBody = document.getElementById('submissionsTableBody');
+            const paginationContainer = document.getElementById('pagination');
+            
+            // Check if there are submissions
+            if (!submissions || submissions.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="text-center">
+                            <div class="empty-state">
+                                <i class='bx bx-search-alt'></i>
+                                <p>No submissions found matching your filters.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                
+                // Clear pagination
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            
+            // Render submissions
+            tableBody.innerHTML = '';
+            
+            submissions.forEach((submission, index) => {
+                const row = document.createElement('tr');
+                
+                // Format date and time
+                const createdAt = new Date(submission.createdAt);
+                const formattedDate = createdAt.toLocaleDateString();
+                const formattedTime = createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Get status class
+                const statusClass = (submission.status === 'read' || submission.isRead) ? 'read' : 'new';
+                const statusLabel = (submission.status === 'read' || submission.isRead) ? 'Read' : 'New';
+                
+                // Get type badge class
+                let typeBadgeClass = 'bg-primary';
+                if (submission.type === 'contact') typeBadgeClass = 'bg-info';
+                if (submission.type === 'flight') typeBadgeClass = 'bg-warning';
+                if (submission.type === 'domestic') typeBadgeClass = 'bg-success';
+                if (submission.type === 'international') typeBadgeClass = 'bg-secondary';
+                if (submission.type === 'visa') typeBadgeClass = 'bg-danger';
+                if (submission.type === 'passport') typeBadgeClass = 'bg-dark';
+                if (submission.type === 'forex') typeBadgeClass = 'bg-primary';
+                if (submission.type === 'honeymoon') typeBadgeClass = 'bg-info text-dark';
+                
+                // Serial number based on pagination
+                const serialNumber = (pagination.page - 1) * pagination.limit + index + 1;
+                
+                row.innerHTML = `
+                    <td>
+                        <input type="checkbox" class="select-submission" data-id="${submission.id}" data-type="${submission.type}">
+                    </td>
+                    <td>${serialNumber}</td>
+                    <td>${submission.name || 'N/A'}</td>
+                    <td>${submission.phone || 'N/A'}</td>
+                    <td>${submission.email || 'N/A'}</td>
+                    <td>
+                        <span class="type-badge ${typeBadgeClass}">${submission.type}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                    </td>
+                    <td>${formattedDate}</td>
+                    <td>${formattedTime}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button type="button" class="action-button view" title="View Details" data-id="${submission.id}" data-type="${submission.type}">
+                                <i class='bx bx-show'></i>
+                            </button>
+                            <button type="button" class="action-button delete" title="Delete" data-id="${submission.id}" data-type="${submission.type}">
+                                <i class='bx bx-trash'></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners for action buttons
+            addActionButtonListeners();
+            
+            // Render pagination
+            renderPagination(pagination);
+        }
+        
+        function addActionButtonListeners() {
+            // View buttons
+            const viewButtons = document.querySelectorAll('.action-button.view');
+            viewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    window.location.href = `/admin/view.html?id=${id}&type=${type}`;
+                });
+            });
+            
+            // Delete buttons
+            const deleteButtons = document.querySelectorAll('.action-button.delete');
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', async function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    
+                    if (confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+                        try {
+                            // Disable button during deletion
+                            this.disabled = true;
+                            this.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i>';
+                            
+                            // Call API to delete
+                            const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${id}`, {
+                                method: 'DELETE'
+                            });
+                            
+                            if (response && response.success) {
+                                // Reload submissions to update the table
+                                loadSubmissions(getCurrentPage());
+                                alert('Submission deleted successfully');
+                            } else {
+                                throw new Error(response.message || 'Failed to delete submission');
+                            }
+                        } catch (error) {
+                            console.error('Error deleting submission:', error);
+                            alert('Error deleting submission: ' + error.message);
+                            // Reset button
+                            this.disabled = false;
+                            this.innerHTML = '<i class="bx bx-trash"></i>';
+                        }
+                    }
+                });
+            });
+        }
+        
+        function renderPagination(pagination) {
+            const paginationContainer = document.getElementById('pagination');
+            const { page, pages } = pagination;
+            
+            // Calculate range of pages to show
+            let startPage = Math.max(1, page - 2);
+            let endPage = Math.min(pages, page + 2);
+            
+            // Ensure at least 5 pages shown if available
+            if (endPage - startPage < 4 && pages > 4) {
+                if (startPage === 1) {
+                    endPage = Math.min(5, pages);
+                } else if (endPage === pages) {
+                    startPage = Math.max(1, pages - 4);
+                }
+            }
+            
+            let paginationHTML = '';
+            
+            // Previous button
+            paginationHTML += `
+                <button class="pagination-button ${page === 1 ? 'disabled' : ''}" 
+                        ${page === 1 ? 'disabled' : `onclick="loadSubmissions(${page - 1})"`}>
+                    <i class='bx bx-chevron-left'></i>
+                </button>
+            `;
+            
+            // First page and ellipsis if needed
+            if (startPage > 1) {
+                paginationHTML += `
+                    <button class="pagination-button" onclick="loadSubmissions(1)">1</button>
+                    ${startPage > 2 ? '<span>...</span>' : ''}
+                `;
+            }
+            
+            // Page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button class="pagination-button ${i === page ? 'active' : ''}" 
+                            onclick="loadSubmissions(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            // Last page and ellipsis if needed
+            if (endPage < pages) {
+                paginationHTML += `
+                    ${endPage < pages - 1 ? '<span>...</span>' : ''}
+                    <button class="pagination-button" onclick="loadSubmissions(${pages})">${pages}</button>
+                `;
+            }
+            
+            // Next button
+            paginationHTML += `
+                <button class="pagination-button ${page === pages ? 'disabled' : ''}" 
+                        ${page === pages ? 'disabled' : `onclick="loadSubmissions(${page + 1})"`}>
+                    <i class='bx bx-chevron-right'></i>
+                </button>
+            `;
+            
+            paginationContainer.innerHTML = paginationHTML;
+        }
+        
+        function getCurrentPage() {
+            // Extract current page from active pagination button
+            const activeButton = document.querySelector('.pagination-button.active');
+            return activeButton ? parseInt(activeButton.textContent) : 1;
+        }
+        
+        function exportSubmissions() {
+            // Get current filters
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const search = document.getElementById('searchTerm').value;
+            
+            // Build export URL with current filters
+            let exportUrl = '/admin/export/submissions?format=csv';
+            
+            if (type !== 'all') {
+                exportUrl += `&type=${type}`;
+            }
+            
+            if (status !== 'all') {
+                exportUrl += `&status=${status}`;
+            }
+            
+            if (fromDate) {
+                exportUrl += `&fromDate=${fromDate}`;
+            }
+            
+            if (toDate) {
+                exportUrl += `&toDate=${toDate}`;
+            }
+            
+            if (search) {
+                exportUrl += `&search=${encodeURIComponent(search)}`;
+            }
+            
+            // Trigger download
+            window.open(exportUrl, '_blank');
+        }
+        
+        async function deleteSelectedSubmissions() {
+            // Get all selected checkboxes
+            const selectedCheckboxes = document.querySelectorAll('.select-submission:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Please select at least one submission to delete.');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${selectedCheckboxes.length} submission(s)? This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Disable delete button during operation
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
+            const originalButtonText = deleteAllBtn.innerHTML;
+            deleteAllBtn.disabled = true;
+            deleteAllBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Deleting...';
+            
+            // Collect all submissions to delete
+            const deletePromises = [];
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const checkbox of selectedCheckboxes) {
+                const id = checkbox.getAttribute('data-id');
+                const type = checkbox.getAttribute('data-type');
+                
+                try {
+                    // Call API to delete
+                    const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response && response.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Failed to delete submission ${id} of type ${type}:`, response.message);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Error deleting submission ${id} of type ${type}:`, error);
+                }
+            }
+            
+            // Reset button state
+            deleteAllBtn.disabled = false;
+            deleteAllBtn.innerHTML = originalButtonText;
+            
+            // Show result and reload data
+            if (errorCount === 0) {
+                alert(`Successfully deleted ${successCount} submission(s).`);
+            } else {
+                alert(`Deleted ${successCount} submission(s), but failed to delete ${errorCount} submission(s). Check console for details.`);
+            }
+            
+            // Reload submissions to update the table
+            loadSubmissions(getCurrentPage());
+        }
+    </script>
+</body>
+</html>
