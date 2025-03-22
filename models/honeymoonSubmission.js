@@ -25,8 +25,8 @@ const HoneymoonSubmissionSchema = new mongoose.Schema({
         type: String
     },
     travelDates: {
-        type: Date
-        
+        type: Date,
+        required: [true, 'Travel dates are required']
     },
     duration: {
         type: String,
@@ -50,6 +50,12 @@ const HoneymoonSubmissionSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    ipAddress: {
+        type: String
+    },
+    userAgent: {
+        type: String
     }
 });
 

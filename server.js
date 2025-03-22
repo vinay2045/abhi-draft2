@@ -14,13 +14,23 @@ dotenv.config();
 
 const app = express();
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => {
+// Connect to MongoDB with improved options
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (err) {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+    // Wait 5 seconds before retrying
+    console.log('Retrying connection in 5 seconds...');
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
 
 // Security middlewares
 app.use(helmet({
@@ -128,6 +138,37 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Process-wide error handlers to prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', err);
+  console.error(err.name, err.message, err.stack);
+  // Give the server time to finish current requests before exiting
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥', err);
+  console.error(err.name, err.message, err.stack);
+  // Don't exit the process, just log the error
+});
+
+// Graceful shutdown for SIGTERM
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  process.exit(0);
+});
+
 const PORT = process.env.PORT || 7777;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
+// Create server with port fallback mechanism
+const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+  .on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${PORT} is busy, trying ${PORT + 1}...`);
+      // Try the next port
+      server.close();
+      app.listen(PORT + 1, () => console.log(`Server running on port ${PORT + 1}`));
+    } else {
+      console.error('Server error:', err);
+    }
+  }); 

@@ -10,34 +10,64 @@ const PassportSubmission = require('../models/passportSubmission');
 const ForexSubmission = require('../models/forexSubmission');
 const HoneymoonSubmission = require('../models/honeymoonSubmission');
 
-// Middleware to determine form type and route to appropriate handler
+// Add this middleware function to determine form type
 function determineFormType(req, res, next) {
-    const formType = req.body.formType || '';
-    const url = req.url.toLowerCase();
-    
-    // Only process if we need to determine the type
-    if (url === '/') {
-        if (formType === 'passport' || url.includes('passport')) {
-            req.url = '/passport';
-        } else if (formType === 'visa' || url.includes('visa')) {
-            req.url = '/visa';
-        } else if (formType === 'flight' || url.includes('flight')) {
-            req.url = '/flight';
-        } else if (formType === 'tour' || url.includes('tour')) {
-            req.url = '/tour';
-        } else if (formType === 'honeymoon' || url.includes('honeymoon')) {
-            req.url = '/honeymoon';
-        } else if (formType === 'forex' || url.includes('forex')) {
-            req.url = '/forex';
-        } else {
-            req.url = '/contact';
+    try {
+        // If the URL already specifies a type, don't modify it
+        const path = req.path;
+        if (path.includes('/contact') || 
+            path.includes('/flight') || 
+            path.includes('/tour') || 
+            path.includes('/visa') || 
+            path.includes('/passport') || 
+            path.includes('/forex') || 
+            path.includes('/honeymoon')) {
+            return next();
         }
+        
+        // Check formType field from the request body
+        const formType = req.body && req.body.formType;
+        if (!formType) {
+            console.log('No formType specified in request body, using default route');
+            return next();
+        }
+        
+        // Map formType to the correct route
+        switch(formType) {
+            case 'contact':
+                req.url = '/contact';
+                break;
+            case 'flight':
+                req.url = '/flight';
+                break;
+            case 'visa':
+                req.url = '/visa';
+                break;
+            case 'passport':
+                req.url = '/passport';
+                break;
+            case 'tour':
+                req.url = '/tour';
+                break;
+            case 'forex':
+                req.url = '/forex';
+                break;
+            case 'honeymoon':
+                req.url = '/honeymoon';
+                break;
+            default:
+                console.log(`Unknown formType: ${formType}, using default route`);
+        }
+        
+        console.log(`Routing form submission to: ${req.url} (derived from formType: ${formType})`);
+    } catch (err) {
+        console.error('Error in determineFormType middleware:', err);
+        // Continue to next middleware even if there's an error
     }
-    
     next();
 }
 
-// Apply this middleware to handle form submissions
+// Apply the middleware to handle form submissions
 router.use(determineFormType);
 
 /**
@@ -109,11 +139,15 @@ router.post(
         check('phone', 'Phone number is required').not().isEmpty(),
         check('from', 'Departure location is required').not().isEmpty(),
         check('to', 'Destination is required').not().isEmpty(),
-        check('departureDate', 'Departure date is required').not().isEmpty()
+        check('departureDate', 'Departure date is required').not().isEmpty(),
+        check('tripType', 'Trip type is required').not().isEmpty(),
+        check('adults', 'Number of passengers is required').not().isEmpty(),
+        check('travelClass', 'Travel class is required').not().isEmpty()
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            console.log('Flight form validation errors:', errors.array());
             return res.status(400).json({
                 success: false,
                 errors: errors.array()
@@ -121,8 +155,11 @@ router.post(
         }
 
         try {
+            // Log the received data for debugging
+            console.log('Flight submission received:', req.body);
+            
             const { 
-                name, email, phone, from, to, departureDate, returnDate, 
+                name, email, phone, tripType, from, to, departureDate, returnDate, 
                 adults, children, travelClass, additionalInfo 
             } = req.body;
 
@@ -131,6 +168,7 @@ router.post(
                 name,
                 email,
                 phone,
+                tripType,
                 from,
                 to,
                 departureDate,
@@ -145,6 +183,7 @@ router.post(
 
             // Save submission
             await submission.save();
+            console.log('Flight submission saved successfully');
 
             res.status(201).json({
                 success: true,
@@ -154,7 +193,7 @@ router.post(
             console.error('Error in flight inquiry submission:', error);
             res.status(500).json({
                 success: false,
-                message: 'Server error'
+                message: 'Server error: ' + error.message
             });
         }
     }

@@ -10,6 +10,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Admin CSS -->
     <link rel="stylesheet" href="css/admin-style.css">
+    <style>
+        .image-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -49,6 +69,12 @@
                             <span>Carousel Items</span>
                         </a>
                     </li>
+                    <li class="menu-item">
+                        <a href="content.html">
+                            <i class='bx bx-edit'></i>
+                            <span>Page Content</span>
+                        </a>
+                    </li>
                     
                     <li class="menu-item has-submenu">
                         <a href="#">
@@ -80,7 +106,10 @@
                                 <a href="flight-inquiries.html">Flight Inquiries</a>
                             </li>
                             <li class="submenu-item">
-                                <a href="tour-bookings.html">Tour Bookings</a>
+                                <a href="domestic-tour-bookings.html">Domestic Tour Bookings</a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="international-tour-bookings.html">International Tour Bookings</a>
                             </li>
                             <li class="submenu-item">
                                 <a href="visa-applications.html">Visa Applications</a>
@@ -267,5 +296,48 @@
     <!-- Scripts -->
     <script src="js/auth.js"></script>
     <script src="js/carousel.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize image preview
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageUrlInput = document.getElementById('imageUrl');
+        
+        if (imageUpload && imagePreview) {
+            imageUpload.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                        
+                        // Set the data URL to the imageUrl field
+                        if (imageUrlInput) {
+                            imageUrlInput.value = e.target.result;
+                        }
+                    }
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+        
+        // Initialize previews for existing images
+        if (imageUrlInput && imagePreview) {
+            imageUrlInput.addEventListener('input', function() {
+                if (this.value) {
+                    imagePreview.innerHTML = `<img src="${this.value}" alt="Preview" onerror="this.src='./img/placeholder.jpg'; this.onerror=null;">`;
+                } else {
+                    imagePreview.innerHTML = '';
+                }
+            });
+            
+            // Initialize on page load
+            if (imageUrlInput.value) {
+                imagePreview.innerHTML = `<img src="${imageUrlInput.value}" alt="Preview" onerror="this.src='./img/placeholder.jpg'; this.onerror=null;">`;
+            }
+        }
+    });
+    </script>
 </body>
 </html> 

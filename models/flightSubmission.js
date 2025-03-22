@@ -13,6 +13,11 @@ const FlightSubmissionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    tripType: {
+        type: String,
+        required: true,
+        enum: ['one-way', 'round-trip', 'multi-city']
+    },
     from: {
         type: String,
         required: true
@@ -39,7 +44,7 @@ const FlightSubmissionSchema = new mongoose.Schema({
     },
     travelClass: {
         type: String,
-        enum: ['economy', 'business', 'first'],
+        enum: ['economy', 'premium-economy', 'business', 'first'],
         default: 'economy'
     },
     additionalInfo: {
@@ -58,6 +63,10 @@ const FlightSubmissionSchema = new mongoose.Schema({
     },
     userAgent: {
         type: String
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 }, {
     timestamps: true

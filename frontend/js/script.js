@@ -968,140 +968,65 @@ function setupFormSubmissions() {
             }
             
             const formData = new FormData(form);
-            const formAction = form.getAttribute('action') || '/api/submissions/contact';
             
-            // Convert FormData to object
+            // Determine the form type
+            const formType = determineFormType(form);
+            
+            // Make sure formType is included in the submission
+            if (!formData.has('formType')) {
+                formData.append('formType', formType);
+            }
+            
+            // Set the correct API endpoint based on form type
+            let apiEndpoint = form.getAttribute('action') || '/api/submissions/contact';
+            if (!apiEndpoint.includes(formType) && formType !== 'contact') {
+                apiEndpoint = `/api/submissions/${formType}`;
+            }
+            
+            console.log(`Form submission detected with type: ${formType} to endpoint: ${apiEndpoint}`);
+            
+            // Convert FormData to object for validation
             const formObject = {};
             formData.forEach((value, key) => {
                 formObject[key] = value;
             });
             
-            // Determine the correct form type based on form attributes and set API endpoint
-            let apiEndpoint = formAction;
-            const formType = determineFormType(form);
-            
-            console.log(`Form submission detected with type: ${formType}`);
-            
             // Special handling based on form type
-            if (formType === 'contact') {
-                // Contact form validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'subject', 'message']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                apiEndpoint = '/api/submissions/contact';
-            }
-            else if (formType === 'passport') {
-                // Passport form validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                // Map form field names to match the API expectations
-                if (formObject.passportType) {
-                    formObject.applicationType = formObject.passportType;
-                }
-                if (formObject.appointmentDate) {
-                    formObject.expectedDate = formObject.appointmentDate;
-                }
-                
-                // Ensure urgency has a valid value
-                formObject.urgency = formObject.urgency || 'Standard';
-                formObject.numberOfApplicants = formObject.numberOfApplicants || '1';
-                
-                apiEndpoint = '/api/submissions/passport';
-            }
-            else if (formType === 'visa') {
-                // Visa form validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                // Make sure destination is set for the API
-                if (formObject.country && !formObject.destination) {
-                    formObject.destination = formObject.country;
-                }
-                
-                if (formObject.travelDate) {
-                    formObject.expectedDate = formObject.travelDate;
-                }
-                
-                apiEndpoint = '/api/submissions/visa';
-            }
-            else if (formType === 'flight') {
-                // Flight form validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                apiEndpoint = '/api/submissions/flight';
-            }
-            else if (formType === 'tour') {
-                // Tour booking validation - reduced required fields
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                // Ensure we have a destination
-                if (!formObject.destination && formObject.tourName) {
-                    formObject.destination = formObject.tourName;
-                }
-                
-                // If a date field exists but with different name
-                if (!formObject.travelDate && formObject.date) {
-                    formObject.travelDate = formObject.date;
-                }
-                
-                apiEndpoint = '/api/submissions/tour';
-                
-                // Explicitly set this field to ensure proper categorization
-                formObject.formType = 'tour';
-            }
-            else if (formType === 'honeymoon') {
-                // Honeymoon booking validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                apiEndpoint = '/api/submissions/honeymoon';
-                
-                // Explicitly set this field to ensure proper categorization
-                formObject.formType = 'honeymoon';
-            }
-            else if (formType === 'forex') {
-                // Forex validation
-                const missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone']);
-                
-                if (missingFields.length > 0) {
-                    resetSubmissionState(submitBtn, originalBtnText);
-                    return;
-                }
-                
-                apiEndpoint = '/api/submissions/forex';
+            let missingFields = [];
+            
+            switch(formType) {
+                case 'contact':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'subject', 'message']);
+                    break;
+                case 'flight':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'from', 'to', 'departureDate']);
+                    break;
+                case 'visa':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination']);
+                    break;
+                case 'passport':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'applicationType']);
+                    break;
+                case 'tour':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination']);
+                    break;
+                case 'forex':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'currencyFrom', 'currencyTo']);
+                    break;
+                case 'honeymoon':
+                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination', 'travelDates']);
+                    break;
+                default:
+                    missingFields = validateRequiredFields(formObject, ['name', 'email']);
+                    break;
             }
             
-            // Ensure the form type is explicitly set
-            formObject.formType = formType;
-            
-            console.log(`Submitting ${formType} form to ${apiEndpoint}`);
+            if (missingFields.length > 0) {
+                resetSubmissionState(submitBtn, originalBtnText);
+                showAlert('error', `Please fill in all required fields: ${missingFields.join(', ')}`);
+                isSubmitting = false;
+                return;
+            }
             
             try {
                 const response = await fetch(apiEndpoint, {
@@ -1113,56 +1038,37 @@ function setupFormSubmissions() {
                     body: JSON.stringify(formObject)
                 });
                 
-                // Reset button state
-                if (submitBtn) {
-                    submitBtn.textContent = originalBtnText;
-                    submitBtn.disabled = false;
-                }
+                const data = await response.json();
                 
-                try {
-                    const data = await response.json();
+                // Debug logging
+                console.log('API Response:', data);
+                
+                if (response.ok) {
+                    // Success - show notification
+                    showAlert('success', data.message || 'Form submitted successfully!');
                     
-                    if (response.ok && data.success) {
-                        // Success
-                        form.reset();
-                        showAlert('success', 'Thank you! Your submission has been received.');
-                        
-                        // If it's a booking form inside a modal, close the modal
-                        const modal = form.closest('.modal, .contact-popup');
-                        if (modal) {
-                            const closeModalBtn = modal.querySelector('.close-modal, .close-btn');
-                            if (closeModalBtn) {
-                                setTimeout(() => {
-                                    closeModalBtn.click();
-                                }, 2000);
-                            } else {
-                                setTimeout(() => {
-                                    modal.style.display = 'none';
-                                }, 2000);
-                            }
-                        }
+                    // Reset form if submission was successful
+                    form.reset();
+                } else {
+                    // API returned an error
+                    const errorMessage = data.message || 'An error occurred during submission.';
+                    
+                    // If there are validation errors, display them
+                    if (data.errors && data.errors.length > 0) {
+                        const errorDetails = data.errors.map(err => `${err.param}: ${err.msg}`).join(', ');
+                        console.error('Validation errors:', data.errors);
+                        showAlert('error', `${errorMessage} (${errorDetails})`);
                     } else {
-                        // API error
-                        let errorMessage = data.message || 'There was a problem with your submission. Please try again.';
-                        
-                        if (data.errors && Array.isArray(data.errors)) {
-                            errorMessage = data.errors.map(err => err.msg).join(', ');
-                        }
-                        
                         showAlert('error', errorMessage);
                     }
-                } catch (parseError) {
-                    showAlert('error', 'Error processing server response. Please try again.');
                 }
             } catch (error) {
-                if (submitBtn) {
-                    submitBtn.textContent = originalBtnText;
-                    submitBtn.disabled = false;
-                }
-                showAlert('error', 'Network error. Please check your connection and try again.');
+                console.error('Form submission error:', error);
+                showAlert('error', 'Network error: Could not connect to the server. Please try again later.');
             }
             
-            // Reset submission status
+            // Reset button state
+            resetSubmissionState(submitBtn, originalBtnText);
             isSubmitting = false;
         });
     });
@@ -1937,65 +1843,37 @@ function initHeroSection(data) {
 }
 
 function determineFormType(form) {
-    const action = form.getAttribute('action') || '';
-    const formId = form.id || '';
-    const formClasses = form.className || '';
-    
-    // Check if this is a booking form from tour cards
-    const isBookingForm = formId === 'bookingForm' || 
-                         formClasses.includes('booking-form') || 
-                         formClasses.includes('booking-popup-content');
-    
-    // Check if it contains destination or tour information
-    const hasTourDestination = form.querySelector('[name="destination"]') || 
-                              form.querySelector('[name="tourName"]') ||
-                              form.querySelector('#booking-tour');
-    
-    if (action.includes('passport') || formId.includes('passport') || formClasses.includes('passport-form')) {
-        return 'passport';
-    } else if (action.includes('visa') || formId.includes('visa') || formClasses.includes('visa-form')) {
-        return 'visa';
-    } else if (action.includes('flight') || formId.includes('flight') || formClasses.includes('flight-form')) {
-        return 'flight';
-    } else if (action.includes('tour') || formId.includes('tour') || formClasses.includes('tour-form') || 
-              (isBookingForm && hasTourDestination && !action.includes('honeymoon'))) {
-        return 'tour';
-    } else if (action.includes('honeymoon') || formId.includes('honeymoon') || formClasses.includes('honeymoon-form')) {
-        return 'honeymoon';
-    } else if (action.includes('forex') || formId.includes('forex') || formClasses.includes('forex-form')) {
-        return 'forex';
-    } else if (action.includes('contact') || formId.includes('contact') || formClasses.includes('contact-form')) {
-        return 'contact';
-    } else {
-        // For forms in the booking popup, check if we can determine the type
-        if (isBookingForm) {
-            const tourTitle = form.querySelector('#booking-tour')?.value || '';
-            
-            // Check if the form is within a modal
-            const modal = form.closest('.modal, .contact-popup');
-            
-            if (modal) {
-                // Determine if it's a domestic or international tour based on context
-                if (window.location.href.includes('Domestic') || 
-                    document.title.includes('Domestic')) {
-                    console.log('Detected as domestic tour booking form');
-                    return 'tour';
-                } else if (window.location.href.includes('International') || 
-                         document.title.includes('International')) {
-                    console.log('Detected as international tour booking form');
-                    return 'tour';
-                }
-            }
-            
-            // For other booking forms, default to tour if they have destination field
-            if (hasTourDestination) {
-                console.log('Detected as generic tour booking form');
-                return 'tour';
-            }
-        }
-        
-        // Default to contact if we can't determine
-        console.warn('Could not determine form type, defaulting to "contact"');
-        return 'contact';
+    // First check if there's a hidden formType field
+    const formTypeInput = form.querySelector('input[name="formType"]');
+    if (formTypeInput && formTypeInput.value) {
+        return formTypeInput.value;
     }
+    
+    // Check form action URL for clues
+    const formAction = form.getAttribute('action') || '';
+    if (formAction.includes('/contact')) return 'contact';
+    if (formAction.includes('/flight')) return 'flight';
+    if (formAction.includes('/visa')) return 'visa';
+    if (formAction.includes('/passport')) return 'passport';
+    if (formAction.includes('/tour')) return 'tour';
+    if (formAction.includes('/forex')) return 'forex';
+    if (formAction.includes('/honeymoon')) return 'honeymoon';
+    
+    // Check form classes and IDs
+    if (form.classList.contains('contact-form') || form.id.includes('contact')) return 'contact';
+    if (form.classList.contains('flight-form') || form.id.includes('flight')) return 'flight';
+    if (form.classList.contains('visa-form') || form.id.includes('visa')) return 'visa';
+    if (form.classList.contains('passport-form') || form.id.includes('passport')) return 'passport';
+    if (form.classList.contains('tour-form') || form.id.includes('tour')) return 'tour';
+    if (form.classList.contains('forex-form') || form.id.includes('forex')) return 'forex';
+    if (form.classList.contains('honeymoon-form') || form.id.includes('honeymoon')) return 'honeymoon';
+    
+    // Check for specific form fields that would indicate the type
+    if (form.querySelector('select[name="visaType"]')) return 'visa';
+    if (form.querySelector('select[name="passportType"]') || form.querySelector('select[name="applicationType"]')) return 'passport';
+    if (form.querySelector('input[name="departureDate"]') && form.querySelector('input[name="from"]')) return 'flight';
+    if (form.querySelector('select[name="destination"]') && form.querySelector('select[name="duration"]')) return 'tour';
+    
+    // Default to contact if no matches
+    return 'contact';
 }

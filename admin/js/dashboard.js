@@ -156,20 +156,23 @@ async function fetchDashboardStats() {
             }
             
             if (statCards.visa) {
-                statCards.visa.textContent = stats.visaCount || 0;
+                statCards.visa.textContent = stats.visa || 0;
             }
             
             if (statCards.passport) {
-                statCards.passport.textContent = stats.passportCount || 0;
+                statCards.passport.textContent = stats.passport || 0;
             }
             
             if (statCards.forex) {
-                statCards.forex.textContent = stats.forexCount || 0;
+                statCards.forex.textContent = stats.forex || 0;
             }
             
             if (statCards.honeymoon) {
-                statCards.honeymoon.textContent = stats.honeymoonCount || 0;
+                statCards.honeymoon.textContent = stats.honeymoon || 0;
             }
+
+            // Update page with console.log for debugging
+            console.log('Dashboard stats loaded:', stats);
         }
     } catch (error) {
         console.error('Error fetching stats:', error);

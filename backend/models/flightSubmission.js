@@ -27,7 +27,8 @@ const flightSubmissionSchema = new mongoose.Schema({
     },
     departureDate: {
         type: Date,
-        required: true
+        required: [true, 'Departure date is required']
+       
     },
     returnDate: {
         type: Date,
