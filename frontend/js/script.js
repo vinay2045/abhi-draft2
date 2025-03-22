@@ -1030,7 +1030,7 @@ function setupFormSubmissions() {
             
             try {
                 const response = await fetch(apiEndpoint, {
-                    method: 'POST',
+                method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'x-api-key': 'travel_api_key_2024'
@@ -1070,8 +1070,8 @@ function setupFormSubmissions() {
             // Reset button state
             resetSubmissionState(submitBtn, originalBtnText);
             isSubmitting = false;
+            });
         });
-    });
     
     // Helper function to validate required fields
     function validateRequiredFields(formObject, requiredFields) {
