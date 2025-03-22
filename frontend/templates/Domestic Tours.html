@@ -420,7 +420,7 @@
                 </div>
                 <div class="form-group">
                     <label for="booking-date">Departure Date</label>
-                    <input type="date" id="booking-date" name="travelDate" required>
+                    <input type="date" id="booking-date" name="departureDate" required>
                 </div>
                 <div class="form-group">
                     <label for="booking-travelers">Number of Travelers</label>
@@ -524,9 +524,65 @@
                     const tourDuration = tourCard.querySelector('.tour-card-duration').textContent.replace(/[^\d\/\s]+/g, '').trim();
                     
                     // Set values in the booking form
-                    document.getElementById('booking-tour').value = tourTitle;
-                    document.getElementById('booking-price').value = tourPrice;
-                    document.getElementById('booking-duration').value = tourDuration;
+                    const tourSelect = document.getElementById('booking-tour');
+                    if (tourSelect) {
+                        // Find matching option or create one
+                        let foundMatch = false;
+                        for (let i = 0; i < tourSelect.options.length; i++) {
+                            if (tourSelect.options[i].value === tourTitle || 
+                                tourSelect.options[i].value === tourTitle.trim() ||
+                                tourTitle.includes(tourSelect.options[i].value)) {
+                                tourSelect.selectedIndex = i;
+                                foundMatch = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!foundMatch && tourTitle) {
+                            for (let i = 0; i < tourSelect.options.length; i++) {
+                                // Look for partial matches in the option text
+                                if (tourSelect.options[i].text.includes(tourTitle) || 
+                                    tourTitle.includes(tourSelect.options[i].text) || 
+                                    tourTitle.includes(tourSelect.options[i].value)) {
+                                    tourSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Check if price and duration fields exist before setting values
+                    const priceField = document.getElementById('booking-price');
+                    if (priceField) {
+                        priceField.value = tourPrice;
+                    }
+                    
+                    const durationField = document.getElementById('booking-duration');
+                    if (durationField) {
+                        durationField.value = tourDuration;
+                    }
+                    
+                    // Add hidden info to form if not set above
+                    const form = document.getElementById('bookingForm');
+                    if (form) {
+                        // Check if we need to add hidden price field
+                        if (!priceField) {
+                            const hiddenPrice = document.createElement('input');
+                            hiddenPrice.type = 'hidden';
+                            hiddenPrice.name = 'price';
+                            hiddenPrice.value = tourPrice;
+                            form.appendChild(hiddenPrice);
+                        }
+                        
+                        // Check if we need to add hidden duration field
+                        if (!durationField) {
+                            const hiddenDuration = document.createElement('input');
+                            hiddenDuration.type = 'hidden';
+                            hiddenDuration.name = 'duration';
+                            hiddenDuration.value = tourDuration;
+                            form.appendChild(hiddenDuration);
+                        }
+                    }
                     
                     // Show the booking popup
                     bookingPopup.style.display = 'flex';
@@ -537,8 +593,7 @@
             bookingForm.addEventListener('submit', function(event) {
                 event.preventDefault();
                 
-                // Here you would normally send the form data to your server
-                alert('Thank you for your booking! We will contact you shortly to confirm the details.');
+               
                 
                 // Close the popup
                 bookingPopup.style.display = 'none';

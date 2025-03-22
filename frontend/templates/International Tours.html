@@ -432,11 +432,11 @@
                 <button class="close-btn" id="closeBookingPopup">&times;</button>
             </div>
             <form id="bookingForm" action="/api/submissions/tour" method="POST" data-submit="ajax">
-                <div class="form-group">
+                    <div class="form-group">
                     <label for="booking-name">Full Name</label>
                     <input type="text" id="booking-name" name="name" required>
-                </div>
-                <div class="form-group">
+                    </div>
+                    <div class="form-group">
                     <label for="booking-email">Email Address</label>
                     <input type="email" id="booking-email" name="email" required>
                 </div>
@@ -458,19 +458,19 @@
                 </div>
                 <div class="form-group">
                     <label for="booking-date">Departure Date</label>
-                    <input type="date" id="booking-date" name="travelDate" required>
+                    <input type="date" id="booking-date" name="departureDate" required>
                 </div>
-                <div class="form-group">
+                    <div class="form-group">
                     <label for="booking-travelers">Number of Travelers</label>
                     <select id="booking-travelers" name="travelers" required>
                         <option value="">Select</option>
-                        <option value="1">1 Person</option>
+                            <option value="1">1 Person</option>
                         <option value="2">2 People</option>
-                        <option value="3">3 People</option>
-                        <option value="4">4 People</option>
-                        <option value="5+">5+ People</option>
-                    </select>
-                </div>
+                            <option value="3">3 People</option>
+                            <option value="4">4 People</option>
+                            <option value="5+">5+ People</option>
+                        </select>
+                    </div>
                 <input type="hidden" name="tourType" value="international">
                 <input type="hidden" name="formType" value="tour">
                 <div class="form-group">
@@ -548,6 +548,111 @@
             window.addEventListener('click', function(event) {
                 if (event.target === bookingPopup) {
                     bookingPopup.style.display = 'none';
+                }
+            });
+            
+            // Add click event to all "Book Now" buttons
+            tourButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    // Get tour details from the card
+                    const tourCard = this.closest('.tour-card');
+                    const tourTitle = tourCard.querySelector('.tour-card-title').textContent;
+                    const tourPrice = tourCard.querySelector('.tour-card-price').textContent;
+                    const tourDuration = tourCard.querySelector('.tour-card-duration').textContent.replace(/[^\d\/\s]+/g, '').trim();
+                    
+                    // Set values in the booking form
+                    const tourSelect = document.getElementById('booking-tour');
+                    if (tourSelect) {
+                        // Find matching option or create one
+                        let foundMatch = false;
+                        for (let i = 0; i < tourSelect.options.length; i++) {
+                            if (tourSelect.options[i].value === tourTitle || 
+                                tourSelect.options[i].value === tourTitle.trim() ||
+                                tourTitle.includes(tourSelect.options[i].value)) {
+                                tourSelect.selectedIndex = i;
+                                foundMatch = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!foundMatch && tourTitle) {
+                            for (let i = 0; i < tourSelect.options.length; i++) {
+                                // Look for partial matches in the option text
+                                if (tourSelect.options[i].text.includes(tourTitle) || 
+                                    tourTitle.includes(tourSelect.options[i].text) || 
+                                    tourTitle.includes(tourSelect.options[i].value)) {
+                                    tourSelect.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Check if price and duration fields exist before setting values
+                    const priceField = document.getElementById('booking-price');
+                    if (priceField) {
+                        priceField.value = tourPrice;
+                    }
+                    
+                    const durationField = document.getElementById('booking-duration');
+                    if (durationField) {
+                        durationField.value = tourDuration;
+                    }
+                    
+                    // Add hidden info to form if not set above
+                    const form = document.getElementById('bookingForm');
+                    if (form) {
+                        // Check if we need to add hidden price field
+                        if (!priceField) {
+                            const hiddenPrice = document.createElement('input');
+                            hiddenPrice.type = 'hidden';
+                            hiddenPrice.name = 'price';
+                            hiddenPrice.value = tourPrice;
+                            form.appendChild(hiddenPrice);
+                        }
+                        
+                        // Check if we need to add hidden duration field
+                        if (!durationField) {
+                            const hiddenDuration = document.createElement('input');
+                            hiddenDuration.type = 'hidden';
+                            hiddenDuration.name = 'duration';
+                            hiddenDuration.value = tourDuration;
+                            form.appendChild(hiddenDuration);
+                        }
+                        
+                        // Ensure the hidden formType and tourType are set correctly
+                        let formTypeField = form.querySelector('input[name="formType"]');
+                        if (!formTypeField) {
+                            formTypeField = document.createElement('input');
+                            formTypeField.type = 'hidden';
+                            formTypeField.name = 'formType';
+                            formTypeField.value = 'tour';
+                            form.appendChild(formTypeField);
+                        }
+                        
+                        let tourTypeField = form.querySelector('input[name="tourType"]');
+                        if (!tourTypeField) {
+                            tourTypeField = document.createElement('input');
+                            tourTypeField.type = 'hidden';
+                            tourTypeField.name = 'tourType';
+                            tourTypeField.value = 'international';
+                            form.appendChild(tourTypeField);
+                        } else {
+                            tourTypeField.value = 'international';
+                        }
+                    }
+                    
+                    // Show the booking popup
+                    bookingPopup.style.display = 'flex';
+                });
+            });
+            
+            // Handle Escape key to close modal
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && bookingPopup.style.display === 'flex') {
+                bookingPopup.style.display = 'none';
                 }
             });
         });

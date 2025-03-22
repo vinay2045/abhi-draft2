@@ -1077,7 +1077,7 @@ function showAlert(type, message) {
  */
 function setupBookNowButtons() {
     // Get all book now buttons across the site with various selectors
-    const bookButtons = document.querySelectorAll('.book-now-btn, button[data-tour], a.book-now, .tour-card-btn, .cta-btn, button:contains("Book Now")');
+    const bookButtons = document.querySelectorAll('.book-now-btn, button[data-tour], a.book-now, .tour-card-btn, .cta-btn, .book-btn, .honeymoon-card-btn, button:contains("Book Now")');
     
     console.log(`Found ${bookButtons.length} book now buttons`);
     
@@ -1091,16 +1091,16 @@ function setupBookNowButtons() {
             console.log('Book now button clicked');
             
             // Get tour details from button attributes or parent elements
-            const tourCard = newButton.closest('.tour-card');
+            const tourCard = newButton.closest('.tour-card, .honeymoon-card, .package-card, .card');
             const tourSection = newButton.closest('.destination-card, section');
             
             const tourName = newButton.getAttribute('data-tour') || 
-                            tourCard?.querySelector('.tour-card-title, .tour-title')?.textContent ||
+                            tourCard?.querySelector('.tour-card-title, .tour-title, .honeymoon-card-title, h3')?.textContent ||
                             tourSection?.querySelector('h2, h3')?.textContent ||
                             '';
             
             const tourPrice = newButton.getAttribute('data-price') || 
-                             tourCard?.querySelector('.tour-card-price, .tour-price')?.textContent ||
+                             tourCard?.querySelector('.tour-card-price, .tour-price, .honeymoon-card-price, .price, [class*="price"]')?.textContent ||
                              tourSection?.querySelector('.price, .per-person, [class*="price"]')?.textContent ||
                              '';
             
@@ -1126,7 +1126,7 @@ function setupBookNowButtons() {
                 bookingModal.style.display = 'flex';
                 
                 // Set the tour name in the modal if there's a place for it
-                const tourNameField = bookingModal.querySelector('#booking-tour') || 
+                const tourNameField = bookingModal.querySelector('#booking-tour, #destination') || 
                                      bookingModal.querySelector('.tour-name') || 
                                      bookingModal.querySelector('[name="tourName"]') ||
                                      bookingModal.querySelector('[name="destination"]');
@@ -1152,7 +1152,8 @@ function setupBookNowButtons() {
                             if (!matchFound) {
                                 for (let i = 0; i < tourNameField.options.length; i++) {
                                     if (tourName.includes(tourNameField.options[i].text) || 
-                                        tourNameField.options[i].text.includes(tourName)) {
+                                        tourNameField.options[i].text.includes(tourName) ||
+                                        tourNameField.options[i].value.includes(tourName.split(' ')[0])) {
                                         tourNameField.selectedIndex = i;
                                         matchFound = true;
                                         break;
@@ -1177,60 +1178,62 @@ function setupBookNowButtons() {
                         tourNameField.textContent = tourName;
                     }
                 }
-                
-                // Set the tour price if there's a place for it
-                const tourPriceField = bookingModal.querySelector('#booking-price') || 
-                                      bookingModal.querySelector('.tour-price') || 
-                                      bookingModal.querySelector('[name="tourPrice"]') ||
-                                      bookingModal.querySelector('[name="price"]');
-                
-                if (tourPriceField && tourPrice) {
-                    if (tourPriceField.tagName === 'INPUT') {
-                        tourPriceField.value = tourPrice;
-                    } else {
-                        tourPriceField.textContent = tourPrice;
-                    }
+            
+                // Determine which page we're on to set appropriate form type and other fields
+                let pageType = 'tour';
+                if (window.location.href.includes('honeymoon') || document.title.includes('Honeymoon')) {
+                    pageType = 'honeymoon';
+                } else if (window.location.href.includes('Domestic') || document.title.includes('Domestic')) {
+                    pageType = 'domestic';
+                } else if (window.location.href.includes('International') || document.title.includes('International')) {
+                    pageType = 'international';
                 }
                 
                 // Add the formType as a hidden field if it doesn't exist
-                let formTypeField = bookingModal.querySelector('input[name="formType"]');
-                if (!formTypeField) {
-                    const form = bookingModal.querySelector('form');
-                    if (form) {
+                const form = bookingModal.querySelector('form');
+                if (form) {
+                    // Add/update formType field
+                    let formTypeField = form.querySelector('input[name="formType"]');
+                    if (!formTypeField) {
                         formTypeField = document.createElement('input');
                         formTypeField.type = 'hidden';
                         formTypeField.name = 'formType';
                         
-                        // Determine if it's domestic or international
-                        if (window.location.href.includes('Domestic') || 
-                            document.title.includes('Domestic')) {
-                            formTypeField.value = 'tour';
-                        } else if (window.location.href.includes('International') || 
-                                 document.title.includes('International')) {
-                            formTypeField.value = 'tour';
+                        // Set formType based on page type
+                        if (pageType === 'honeymoon') {
+                            formTypeField.value = 'honeymoon';
                         } else {
                             formTypeField.value = 'tour';
                         }
                         
                         form.appendChild(formTypeField);
                     }
-                }
-                
-                // Ensure the form has the ajax attribute
-                const modalForm = bookingModal.querySelector('form');
-                if (modalForm && !modalForm.hasAttribute('data-submit')) {
-                    modalForm.setAttribute('data-submit', 'ajax');
-                    modalForm.setAttribute('action', '/api/submissions/tour');
-                    modalForm.setAttribute('method', 'POST');
-                }
-                
-                // Remove any inline event handlers that might interfere
-                if (modalForm) {
-                    modalForm.onsubmit = null;
                     
-                    // Temporarily remove existing event listeners
-                    const newForm = modalForm.cloneNode(true);
-                    modalForm.parentNode.replaceChild(newForm, modalForm);
+                    // Add/update tourType field for tour submissions
+                    if (pageType === 'domestic' || pageType === 'international') {
+                        let tourTypeField = form.querySelector('input[name="tourType"]');
+                        if (!tourTypeField) {
+                            tourTypeField = document.createElement('input');
+                            tourTypeField.type = 'hidden';
+                            tourTypeField.name = 'tourType';
+                            tourTypeField.value = (pageType === 'domestic') ? 'domestic' : 'international';
+                            form.appendChild(tourTypeField);
+                        } else {
+                            tourTypeField.value = (pageType === 'domestic') ? 'domestic' : 'international';
+                        }
+                    }
+                    
+                    // Ensure the form has the ajax attribute
+                    if (!form.hasAttribute('data-submit')) {
+                        form.setAttribute('data-submit', 'ajax');
+                    }
+                    
+                    // Set the correct form action
+                    if (pageType === 'honeymoon') {
+                        form.setAttribute('action', '/api/submissions/honeymoon');
+                    } else {
+                        form.setAttribute('action', '/api/submissions/tour');
+                    }
                     
                     // Set up the form for ajax submission
                     setupFormSubmissions();
