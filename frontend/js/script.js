@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submissions
     setupFormSubmissions();
 
+    // Initialize booking buttons
+    setupBookNowButtons();
+
     loadCarouselData();
 });
 
@@ -49,6 +52,9 @@ window.addEventListener('load', function() {
         // If setupMenuAndUI hasn't been called yet, or we need to reinitialize
         setupMenuAndUI();
     }
+    
+    // Ensure booking buttons are set up
+    setupBookNowButtons();
 });
 
 // Hero Carousel Setup Function
@@ -980,8 +986,8 @@ function setupFormSubmissions() {
                 console.error('Form submission error:', error);
                 showAlert('error', 'An error occurred during submission. Please try again later.');
             }
+            });
         });
-    });
 }
 
 /**
@@ -1076,200 +1082,198 @@ function showAlert(type, message) {
  * Set up Book Now buttons to trigger booking popups
  */
 function setupBookNowButtons() {
+    // Skip setup for honeymoon page - it has its own handlers
+    if (window.location.href.includes('honeymoonpackages.html')) {
+        console.log('Skipping setupBookNowButtons for honeymoon page - using page-specific handlers');
+        return;
+    }
+
     // Get all book now buttons across the site with various selectors
-    const bookButtons = document.querySelectorAll('.book-now-btn, button[data-tour], a.book-now, .tour-card-btn, .cta-btn, .book-btn, .honeymoon-card-btn, button:contains("Book Now")');
+    const bookButtons = document.querySelectorAll('.book-now-btn, button[data-tour], a.book-now, .tour-card-btn, .cta-btn, .book-btn, .honeymoon-card-btn, .honeymoon-submit-btn');
     
     console.log(`Found ${bookButtons.length} book now buttons`);
     
-    bookButtons.forEach(button => {
-        // Remove any existing event listeners to prevent duplicates
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
+    if (bookButtons.length === 0) {
+        // Add a fallback to find buttons by content text
+        const allButtons = document.querySelectorAll('button');
+        const bookNowButtons = Array.from(allButtons).filter(btn => 
+            btn.textContent.toLowerCase().includes('book now') || 
+            btn.textContent.toLowerCase().includes('book') || 
+            btn.closest('.honeymoon-card') !== null
+        );
         
-        newButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Book now button clicked');
+        console.log(`Found ${bookNowButtons.length} book now buttons by text content`);
+        
+        bookNowButtons.forEach(btn => {
+            btn.addEventListener('click', handleBookButtonClick);
+        });
+    } else {
+        bookButtons.forEach(button => {
+            button.addEventListener('click', handleBookButtonClick);
+        });
+    }
+    
+    // Separate function to handle click events to avoid code duplication
+    function handleBookButtonClick(e) {
+        e.preventDefault();
+        console.log('Book now button clicked');
+        
+        // Get tour details from button attributes or parent elements
+        const tourCard = this.closest('.tour-card, .honeymoon-card, .package-card, .card');
+        const tourSection = this.closest('.destination-card, section');
+        
+        const tourName = this.getAttribute('data-tour') || 
+                        tourCard?.querySelector('.tour-card-title, .tour-title, .honeymoon-card-title, h3')?.textContent ||
+                        tourSection?.querySelector('h2, h3')?.textContent ||
+                        '';
+        
+        const tourPrice = this.getAttribute('data-price') || 
+                         tourCard?.querySelector('.tour-card-price, .tour-price, .honeymoon-card-price, .price, [class*="price"]')?.textContent ||
+                         tourSection?.querySelector('.price, .per-person, [class*="price"]')?.textContent ||
+                         '';
+        
+        console.log('Tour details:', { tourName, tourPrice });
+        
+        // Find the booking popup modal - search for various modal IDs
+        let bookingModal;
+        if (this.getAttribute('data-target')) {
+            // If the button has a specific target modal
+            bookingModal = document.querySelector(this.getAttribute('data-target'));
+        } else {
+            // Look for any booking modal using various possible IDs
+            bookingModal = document.getElementById('bookingPopup') || 
+                          document.getElementById('bookingModal') || 
+                          document.querySelector('.booking-modal, .contact-popup, .modal');
+        }
+        
+        console.log('Looking for booking modal...', bookingModal);
+        
+        // If we found a modal, populate it with tour details
+        if (bookingModal) {
+            console.log('Booking modal found:', bookingModal);
             
-            // Get tour details from button attributes or parent elements
-            const tourCard = newButton.closest('.tour-card, .honeymoon-card, .package-card, .card');
-            const tourSection = newButton.closest('.destination-card, section');
+            // Force display block for all modals for consistency
+            bookingModal.style.display = 'block';
             
-            const tourName = newButton.getAttribute('data-tour') || 
-                            tourCard?.querySelector('.tour-card-title, .tour-title, .honeymoon-card-title, h3')?.textContent ||
-                            tourSection?.querySelector('h2, h3')?.textContent ||
-                            '';
-            
-            const tourPrice = newButton.getAttribute('data-price') || 
-                             tourCard?.querySelector('.tour-card-price, .tour-price, .honeymoon-card-price, .price, [class*="price"]')?.textContent ||
-                             tourSection?.querySelector('.price, .per-person, [class*="price"]')?.textContent ||
-                             '';
-            
-            // Find the booking popup modal - search for various modal IDs
-            let bookingModal;
-            if (newButton.getAttribute('data-target')) {
-                // If the button has a specific target modal
-                bookingModal = document.querySelector(newButton.getAttribute('data-target'));
-            } else {
-                // Look for any booking modal using various possible IDs
-                bookingModal = document.getElementById('bookingPopup') || 
-                              document.getElementById('bookingModal') || 
-                              document.querySelector('.booking-modal, .contact-popup, .modal');
+            // Set minimum date for travel date input to tomorrow
+            const travelDateInput = bookingModal.querySelector('#travel-date, [name="travelDates"]');
+            if (travelDateInput) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                travelDateInput.min = tomorrow.toISOString().split('T')[0];
             }
             
-            console.log('Looking for booking modal...');
+            // Set the tour name in the modal if there's a place for it
+            const tourNameField = bookingModal.querySelector('#booking-tour, #destination') || 
+                                 bookingModal.querySelector('.tour-name') || 
+                                 bookingModal.querySelector('[name="tourName"]') ||
+                                 bookingModal.querySelector('[name="destination"]');
             
-            // If we found a modal, populate it with tour details
-            if (bookingModal) {
-                console.log('Booking modal found:', bookingModal);
-                
-                // Make the modal visible
-                bookingModal.style.display = 'flex';
-                
-                // Set the tour name in the modal if there's a place for it
-                const tourNameField = bookingModal.querySelector('#booking-tour, #destination') || 
-                                     bookingModal.querySelector('.tour-name') || 
-                                     bookingModal.querySelector('[name="tourName"]') ||
-                                     bookingModal.querySelector('[name="destination"]');
-                
-                if (tourNameField && tourName) {
-                    console.log('Setting tour name to:', tourName);
-                    if (tourNameField.tagName === 'INPUT' || tourNameField.tagName === 'SELECT') {
-                        // For selects, try to find a matching option
-                        if (tourNameField.tagName === 'SELECT') {
-                            let matchFound = false;
-                            
-                            // Try to find an exact match
+            if (tourNameField && tourName) {
+                console.log('Setting tour name to:', tourName);
+                if (tourNameField.tagName === 'INPUT' || tourNameField.tagName === 'SELECT') {
+                    // For selects, try to find a matching option
+                    if (tourNameField.tagName === 'SELECT') {
+                        let matchFound = false;
+                        
+                        // Try to find an exact match
+                        for (let i = 0; i < tourNameField.options.length; i++) {
+                            if (tourNameField.options[i].text === tourName || 
+                                tourNameField.options[i].value === tourName) {
+                                tourNameField.selectedIndex = i;
+                                matchFound = true;
+                                break;
+                            }
+                        }
+                        
+                        // If no exact match, look for a partial match
+                        if (!matchFound) {
                             for (let i = 0; i < tourNameField.options.length; i++) {
-                                if (tourNameField.options[i].text === tourName || 
-                                    tourNameField.options[i].value === tourName) {
+                                if (tourName.includes(tourNameField.options[i].text) || 
+                                    tourNameField.options[i].text.includes(tourName) ||
+                                    tourNameField.options[i].value.includes(tourName.split(' ')[0])) {
                                     tourNameField.selectedIndex = i;
                                     matchFound = true;
                                     break;
                                 }
                             }
-                            
-                            // If no exact match, look for a partial match
-                            if (!matchFound) {
-                                for (let i = 0; i < tourNameField.options.length; i++) {
-                                    if (tourName.includes(tourNameField.options[i].text) || 
-                                        tourNameField.options[i].text.includes(tourName) ||
-                                        tourNameField.options[i].value.includes(tourName.split(' ')[0])) {
-                                        tourNameField.selectedIndex = i;
-                                        matchFound = true;
-                                        break;
-                                    }
+                        }
+                        
+                        // If still no match, set the first non-empty option
+                        if (!matchFound) {
+                            for (let i = 0; i < tourNameField.options.length; i++) {
+                                if (tourNameField.options[i].value) {
+                                    tourNameField.selectedIndex = i;
+                                    break;
                                 }
                             }
-                            
-                            // If still no match, set the first non-empty option
-                            if (!matchFound) {
-                                for (let i = 0; i < tourNameField.options.length; i++) {
-                                    if (tourNameField.options[i].value) {
-                                        tourNameField.selectedIndex = i;
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            // For regular inputs
-                            tourNameField.value = tourName;
                         }
                     } else {
-                        tourNameField.textContent = tourName;
+                        // For regular inputs
+                        tourNameField.value = tourName;
                     }
+                } else {
+                    tourNameField.textContent = tourName;
                 }
+            }
             
-                // Determine which page we're on to set appropriate form type and other fields
-                let pageType = 'tour';
-                if (window.location.href.includes('honeymoon') || document.title.includes('Honeymoon')) {
-                    pageType = 'honeymoon';
-                } else if (window.location.href.includes('Domestic') || document.title.includes('Domestic')) {
-                    pageType = 'domestic';
-                } else if (window.location.href.includes('International') || document.title.includes('International')) {
-                    pageType = 'international';
-                }
+            // Make sure the formType is set to honeymoon if we're on the honeymoon page
+            if (window.location.href.includes('honeymoon') || tourName.toLowerCase().includes('honeymoon') || 
+                document.querySelector('.honeymoon-card') !== null) {
                 
-                // Add the formType as a hidden field if it doesn't exist
-                const form = bookingModal.querySelector('form');
-                if (form) {
-                    // Add/update formType field
-                    let formTypeField = form.querySelector('input[name="formType"]');
-                    if (!formTypeField) {
+                let formTypeField = bookingModal.querySelector('input[name="formType"]');
+                if (!formTypeField) {
+                    const form = bookingModal.querySelector('form');
+                    if (form) {
                         formTypeField = document.createElement('input');
                         formTypeField.type = 'hidden';
                         formTypeField.name = 'formType';
-                        
-                        // Set formType based on page type
-                        if (pageType === 'honeymoon') {
-                            formTypeField.value = 'honeymoon';
-                        } else {
-                            formTypeField.value = 'tour';
-                        }
-                        
+                        formTypeField.value = 'honeymoon';
                         form.appendChild(formTypeField);
+                        console.log('Added formType field to form');
                     }
-                    
-                    // Add/update tourType field for tour submissions
-                    if (pageType === 'domestic' || pageType === 'international') {
-                        let tourTypeField = form.querySelector('input[name="tourType"]');
-                        if (!tourTypeField) {
-                            tourTypeField = document.createElement('input');
-                            tourTypeField.type = 'hidden';
-                            tourTypeField.name = 'tourType';
-                            tourTypeField.value = (pageType === 'domestic') ? 'domestic' : 'international';
-                            form.appendChild(tourTypeField);
-                        } else {
-                            tourTypeField.value = (pageType === 'domestic') ? 'domestic' : 'international';
-                        }
-                    }
-                    
-                    // Ensure the form has the ajax attribute
-                    if (!form.hasAttribute('data-submit')) {
-                        form.setAttribute('data-submit', 'ajax');
-                    }
-                    
-                    // Set the correct form action
-                    if (pageType === 'honeymoon') {
-                        form.setAttribute('action', '/api/submissions/honeymoon');
-                    } else {
-                        form.setAttribute('action', '/api/submissions/tour');
-                    }
-                    
-                    // Set up the form for ajax submission
-                    setupFormSubmissions();
+                } else {
+                    formTypeField.value = 'honeymoon';
+                    console.log('Set existing formType field to honeymoon');
                 }
-                
-                // Add close functionality - look for various close buttons
-                const closeButtons = bookingModal.querySelectorAll('.close-btn, .close-modal, .modal-close, #closeBookingPopup');
-                closeButtons.forEach(closeBtn => {
-                    // Remove existing event listeners
-                    const newCloseBtn = closeBtn.cloneNode(true);
-                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-                    
-                    newCloseBtn.addEventListener('click', function() {
-                        bookingModal.style.display = 'none';
-                    });
-                });
-                
-                // Close when clicking outside the modal content
-                bookingModal.addEventListener('click', function(e) {
-                    if (e.target === bookingModal) {
-                        bookingModal.style.display = 'none';
-                    }
-                });
-            } else {
-                // If no modal is found, show an error
-                console.error('Booking modal not found');
-                showAlert('error', 'Booking form not found. Please try again later.');
+            }
+            
+        } else {
+            console.error('No booking modal found on the page');
+        }
+    }
+    
+    // Set up close functionality for all modals
+    const closeButtons = document.querySelectorAll('.close-modal, .modal .close-btn');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal, .booking-modal, #bookingModal, #bookingPopup');
+            if (modal) {
+                console.log('Closing modal');
+                modal.style.display = 'none';
             }
         });
     });
     
-    // Close modals when escape key is pressed
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('.modal, .contact-popup').forEach(modal => {
-                modal.style.display = 'none';
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal') || 
+            event.target.id === 'bookingModal' || 
+            event.target.id === 'bookingPopup') {
+            event.target.style.display = 'none';
+            console.log('Closing modal from outside click');
+        }
+    });
+    
+    // Close modals with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modals = document.querySelectorAll('.modal, .booking-modal, #bookingModal, #bookingPopup');
+            modals.forEach(modal => {
+                if (modal && modal.style.display !== 'none') {
+                    modal.style.display = 'none';
+                    console.log('Closing modal with escape key');
+                }
             });
         }
     });

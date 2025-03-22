@@ -2096,6 +2096,10 @@ nav a {
     padding: 25px;
     border-radius: 12px;
     width: 90%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     max-width: 400px;
     position: relative;
     backdrop-filter: blur(10px);
@@ -2108,7 +2112,12 @@ nav a {
     max-width: 450px;
     max-height: 65vh;
     overflow-y: auto;
-    padding: 20px;
+    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+        padding: 20px;
 }
 
 .booking-popup-content::-webkit-scrollbar {

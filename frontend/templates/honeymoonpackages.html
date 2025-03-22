@@ -44,6 +44,7 @@
     
     <!-- Script loader for deferred JavaScript loading -->
     <script src="../js/script-loader.js" defer></script>
+   
 </head>
 <body>
     <div class="container">
@@ -422,38 +423,44 @@
     </div>
     
     <!-- Booking Modal -->
-    <div class="modal" id="bookingModal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Book Your Honeymoon Package</h2>
+    <div class="contact-popup" id="bookingModal">
+        <div class="contact-popup-content booking-popup-content">
+            <div class="popup-header">
+                <h3>Book Your Honeymoon Package</h3>
+                <button class="close-btn" id="closeBookingPopup">&times;</button>
+            </div>
             <form id="bookingForm" action="/api/submissions/honeymoon" method="POST" data-submit="ajax">
                 <div class="form-group">
-                    <label for="name">Your Names</label>
-                    <input type="text" id="name" name="name" placeholder="Couple's Names" required>
+                    <label for="booking-name">Your Names</label>
+                    <input type="text" id="booking-name" name="name" placeholder="Couple's Names" required>
                 </div>
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="Your Email" required>
+                    <label for="booking-email">Email Address</label>
+                    <input type="email" id="booking-email" name="email" placeholder="Your Email" required>
                 </div>
                 <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" placeholder="Your Phone" required>
+                    <label for="booking-phone">Phone Number</label>
+                    <input type="tel" id="booking-phone" name="phone" placeholder="Your Phone" required>
                 </div>
                 <div class="form-group">
                     <label for="destination">Destination</label>
                     <select id="destination" name="destination" required>
                         <option value="">Select Destination</option>
+                        <option value="Maldives Paradise">Maldives Paradise</option>
+                        <option value="Bali Bliss">Bali Bliss</option>
+                        <option value="Santorini Romance">Santorini Romance</option>
+                        <option value="Swiss Alps Retreat">Swiss Alps Retreat</option>
                         <option value="Bali">Bali</option>
                         <option value="Maldives">Maldives</option>
                         <option value="Santorini">Santorini</option>
-                        <option value="Paris">Paris</option>
                         <option value="Swiss Alps">Swiss Alps</option>
+                        <option value="Paris">Paris</option>
                         <option value="Goa">Goa</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="travel-date">Travel Date</label>
-                    <input type="date" id="travel-date" name="travelDate" required>
+                    <input type="date" id="travel-date" name="travelDates" required>
                 </div>
                 <div class="form-group">
                     <label for="duration">Duration</label>
@@ -476,11 +483,11 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="message">Special Requests</label>
-                    <textarea id="message" name="message" placeholder="Any special requests or preferences?"></textarea>
+                    <label for="booking-message">Special Requests</label>
+                    <textarea id="booking-message" name="message" placeholder="Any special requests or preferences?"></textarea>
                 </div>
                 <input type="hidden" name="formType" value="honeymoon">
-                <button type="submit">Book Now</button>
+                <button type="submit" class="submit-btn">Book Now</button>
             </form>
         </div>
     </div>
@@ -490,9 +497,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Set up booking modal
-            const modal = document.getElementById('bookingModal');
-            const closeModal = document.querySelector('.close-modal');
-            const bookNowButtons = document.querySelectorAll('.book-btn, .book-now, .honeymoon-card-btn');
+            const bookingPopup = document.getElementById('bookingModal');
+            const closeBookingPopup = document.getElementById('closeBookingPopup');
+            const bookNowButtons = document.querySelectorAll('.honeymoon-card-btn');
             
             // Set minimum date for travel date to tomorrow
             const travelDateInput = document.getElementById('travel-date');
@@ -506,15 +513,17 @@
             bookNowButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
+                    console.log('Honeymoon book now button clicked');
                     
                     // Get package details
-                    const packageCard = this.closest('.honeymoon-card, .package-card, .card');
+                    const packageCard = this.closest('.honeymoon-card');
                     let destination = '';
                     let price = '';
                     
                     if (packageCard) {
-                        destination = packageCard.querySelector('.honeymoon-card-title, .package-title, h3').textContent;
-                        price = packageCard.querySelector('.honeymoon-card-price, .price, [class*="price"]').textContent;
+                        destination = packageCard.querySelector('.honeymoon-card-title').textContent;
+                        price = packageCard.querySelector('.honeymoon-card-price').textContent;
+                        console.log('Package details:', { destination, price });
                         
                         // Set destination in form if it exists
                         const destinationSelect = document.getElementById('destination');
@@ -544,9 +553,9 @@
                     }
                     
                     // Ensure the hidden formType is set
-                    let formTypeField = document.querySelector('input[name="formType"]');
+                    let formTypeField = document.querySelector('#bookingForm input[name="formType"]');
                     if (!formTypeField) {
-                        const form = document.querySelector('#bookingModal form');
+                        const form = document.querySelector('#bookingForm');
                         if (form) {
                             formTypeField = document.createElement('input');
                             formTypeField.type = 'hidden';
@@ -554,33 +563,44 @@
                             formTypeField.value = 'honeymoon';
                             form.appendChild(formTypeField);
                         }
+                    } else {
+                        formTypeField.value = 'honeymoon';
                     }
                     
-                    // Show modal
-                    if (modal) {
-                        modal.style.display = 'block';
+                    // Show booking popup with flex display like domestic tour page
+                    if (bookingPopup) {
+                        bookingPopup.style.display = 'flex';
                     }
                 });
             });
             
-            // Close modal when clicking X
-            if (closeModal) {
-                closeModal.addEventListener('click', function() {
-                    modal.style.display = 'none';
+            // Also handle the main CTA button
+            const ctaBtn = document.querySelector('.cta-btn');
+            if (ctaBtn) {
+                ctaBtn.addEventListener('click', function(e) {
+                    // We'll keep the default scroll behavior for this button
+                    console.log('CTA button clicked - scrolling to form');
                 });
             }
             
-            // Close modal when clicking outside
+            // Close modal when clicking X
+            if (closeBookingPopup) {
+                closeBookingPopup.addEventListener('click', function() {
+                    bookingPopup.style.display = 'none';
+                });
+            }
+            
+            // Close popup when clicking outside
             window.addEventListener('click', function(event) {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
+                if (event.target === bookingPopup) {
+                    bookingPopup.style.display = 'none';
                 }
             });
             
             // Close modal with Escape key
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && modal) {
-                    modal.style.display = 'none';
+                if (event.key === 'Escape' && bookingPopup && bookingPopup.style.display === 'flex') {
+                    bookingPopup.style.display = 'none';
                 }
             });
         });

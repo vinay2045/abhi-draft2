@@ -462,6 +462,9 @@
     padding: 25px;
     border-radius: 12px;
     width: 90%;
+   
+    left: 50%;
+    transform: translate(-50%, -50%);
     max-width: 400px;
     position: relative;
     backdrop-filter: blur(10px);
