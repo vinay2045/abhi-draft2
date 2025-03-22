@@ -242,9 +242,10 @@
                             <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required>
                         </div>
                         <div class="forex-form-group">
-                            <label for="currency">Currency Required</label>
-                            <select id="currency" name="currency" required>
+                            <label for="currencyFrom">Currency From</label>
+                            <select id="currencyFrom" name="currencyFrom" required>
                                 <option value="">Select Currency</option>
+                                <option value="INR">Indian Rupee (INR)</option>
                                 <option value="USD">US Dollar (USD)</option>
                                 <option value="EUR">Euro (EUR)</option>
                                 <option value="GBP">British Pound (GBP)</option>
@@ -252,24 +253,38 @@
                                 <option value="CAD">Canadian Dollar (CAD)</option>
                                 <option value="SGD">Singapore Dollar (SGD)</option>
                                 <option value="AED">UAE Dirham (AED)</option>
-                                <option value="other">Other (Please specify in message)</option>
                             </select>
                         </div>
                     </div>
                     <div class="forex-form-row">
                         <div class="forex-form-group">
-                            <label for="amount">Approximate Amount</label>
-                            <input type="number" id="amount" name="amount" placeholder="Enter amount in INR" required>
+                            <label for="currencyTo">Currency To</label>
+                            <select id="currencyTo" name="currencyTo" required>
+                                <option value="">Select Currency</option>
+                                <option value="INR">Indian Rupee (INR)</option>
+                                <option value="USD">US Dollar (USD)</option>
+                                <option value="EUR">Euro (EUR)</option>
+                                <option value="GBP">British Pound (GBP)</option>
+                                <option value="AUD">Australian Dollar (AUD)</option>
+                                <option value="CAD">Canadian Dollar (CAD)</option>
+                                <option value="SGD">Singapore Dollar (SGD)</option>
+                                <option value="AED">UAE Dirham (AED)</option>
+                            </select>
                         </div>
                         <div class="forex-form-group">
-                            <label for="purpose">Purpose of Foreign Exchange</label>
-                            <select id="purpose" name="purpose" required>
-                                <option value="">Select Purpose</option>
-                                <option value="travel">Travel</option>
-                                <option value="education">Education</option>
-                                <option value="medical">Medical Treatment</option>
-                                <option value="business">Business</option>
-                                <option value="emigration">Emigration</option>
+                            <label for="amount">Approximate Amount</label>
+                            <input type="number" id="amount" name="amount" placeholder="Enter approximate amount" required>
+                        </div>
+                    </div>
+                    <div class="forex-form-row">
+                        <div class="forex-form-group">
+                            <label for="serviceType">Service Type</label>
+                            <select id="serviceType" name="serviceType" required>
+                                <option value="">Select Service Type</option>
+                                <option value="currency-exchange">Currency Exchange</option>
+                                <option value="travel-card">Travel Card</option>
+                                <option value="wire-transfer">Wire Transfer</option>
+                                <option value="travel-insurance">Travel Insurance</option>
                                 <option value="other">Other (Please specify in message)</option>
                             </select>
                         </div>
@@ -284,6 +299,7 @@
                         <label for="message">Additional Information</label>
                         <textarea id="message" name="message" placeholder="Any specific requirements or questions?"></textarea>
                     </div>
+                    <input type="hidden" name="formType" value="forex">
                     <button type="submit" class="forex-submit-btn">Submit Enquiry</button>
                 </form>
             </div>
