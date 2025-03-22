@@ -58,11 +58,26 @@ app.use(uploadMiddleware);
 // Serve static files from uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Set proper MIME types for CSS files
+app.use(express.static(path.join(__dirname, 'frontend'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
+
 // Serve frontend static files in both production and development
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Serve admin static files (both in production and development)
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/admin', express.static(path.join(__dirname, 'admin'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

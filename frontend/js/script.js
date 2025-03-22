@@ -875,39 +875,8 @@ function setupMenuAndUI() {
     document.head.appendChild(whatsappStyle);
     document.body.appendChild(whatsappButton);
 
-    // Contact Form Popup Functionality
-    const contactBtn = document.getElementById('contactBtn');
-    const contactPopup = document.getElementById('contactPopup');
-    const closeContactPopup = document.getElementById('closeContactPopup');
-    const contactForm = document.getElementById('contactForm');
-
-    if (contactBtn && contactPopup && closeContactPopup && contactForm) {
-        contactBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            contactPopup.style.display = 'flex';
-        });
-
-        closeContactPopup.addEventListener('click', function() {
-            contactPopup.style.display = 'none';
-        });
-
-        // Close popup when clicking outside
-        contactPopup.addEventListener('click', function(e) {
-            if (e.target === contactPopup) {
-                contactPopup.style.display = 'none';
-            }
-        });
-
-        // Handle form submission
-        contactForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Here you can add your form submission logic
-            // For now, we'll just close the popup
-            alert('Thank you for your message! We will contact you soon.');
-            contactPopup.style.display = 'none';
-            contactForm.reset();
-        });
-    }
+    // Add a function to initialize contact buttons
+    setupContactButtons();
 
     // Also update resize event handler
     window.addEventListener('resize', function() {
@@ -940,163 +909,79 @@ function setupMenuAndUI() {
  * Handle form submissions with AJAX
  */
 function setupFormSubmissions() {
-    // Track if submission is in progress to prevent multiple submissions
-    let isSubmitting = false;
-    
-    // Remove any existing messages on page load
-    document.querySelectorAll('.notification').forEach(msg => msg.remove());
-    
     const forms = document.querySelectorAll('form[data-submit="ajax"]');
     
     forms.forEach(form => {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Prevent multiple submissions
-            if (isSubmitting) return;
-            isSubmitting = true;
-            
-            // Remove all existing messages first
-            document.querySelectorAll('.notification').forEach(msg => msg.remove());
-            
-            // Show loading state
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn ? submitBtn.textContent : 'Submit';
-            if (submitBtn) {
-                submitBtn.textContent = 'Submitting...';
-                submitBtn.disabled = true;
-            }
-            
             const formData = new FormData(form);
-            
-            // Determine the form type
-            const formType = determineFormType(form);
-            
-            // Make sure formType is included in the submission
-            if (!formData.has('formType')) {
-                formData.append('formType', formType);
-            }
-            
-            // Set the correct API endpoint based on form type
-            let apiEndpoint = form.getAttribute('action') || '/api/submissions/contact';
-            if (!apiEndpoint.includes(formType) && formType !== 'contact') {
-                apiEndpoint = `/api/submissions/${formType}`;
-            }
-            
-            console.log(`Form submission detected with type: ${formType} to endpoint: ${apiEndpoint}`);
-            
-            // Convert FormData to object for validation
             const formObject = {};
+            
+            // Convert FormData to object
             formData.forEach((value, key) => {
                 formObject[key] = value;
             });
             
-            // Special handling based on form type
-            let missingFields = [];
-            
-            switch(formType) {
-                case 'contact':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'subject', 'message']);
-                    break;
-                case 'flight':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'from', 'to', 'departureDate']);
-                    break;
-                case 'visa':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination']);
-                    break;
-                case 'passport':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'applicationType']);
-                    break;
-                case 'tour':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination']);
-                    break;
-                case 'forex':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'currencyFrom', 'currencyTo']);
-                    break;
-                case 'honeymoon':
-                    missingFields = validateRequiredFields(formObject, ['name', 'email', 'phone', 'destination', 'travelDates']);
-                    break;
-                default:
-                    missingFields = validateRequiredFields(formObject, ['name', 'email']);
-                    break;
+            // Add formType if not present
+            if (!formObject.formType) {
+                if (form.action.includes('/contact')) {
+                    formObject.formType = 'contact';
+                }
             }
             
-            if (missingFields.length > 0) {
-                resetSubmissionState(submitBtn, originalBtnText);
-                showAlert('error', `Please fill in all required fields: ${missingFields.join(', ')}`);
-                isSubmitting = false;
-                return;
+            // Add missing required fields for contact form
+            if (form.id === 'contactForm' || form.action.includes('/contact')) {
+                // Ensure subject field exists (it's required by the backend)
+                if (!formObject.subject && !form.querySelector('[name="subject"]')) {
+                    formObject.subject = 'General Inquiry';
+                }
             }
+            
+            console.log('Submitting form data:', formObject);
+            console.log('Form action:', form.action);
             
             try {
-                const response = await fetch(apiEndpoint, {
-                method: 'POST',
+                const response = await fetch(form.action, {
+                    method: form.method || 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': 'travel_api_key_2024'
+                        'x-api-key': 'travel_api_key_2024' // Add the API key expected by the backend
                     },
                     body: JSON.stringify(formObject)
                 });
                 
-                const data = await response.json();
+                const result = await response.json();
                 
-                // Debug logging
-                console.log('API Response:', data);
-                
-                if (response.ok) {
-                    // Success - show notification
-                    showAlert('success', data.message || 'Form submitted successfully!');
-                    
-                    // Reset form if submission was successful
+                if (result.success) {
+                    console.log('Form submission successful:', result);
+                    showAlert('Form submitted successfully!', 'success');
                     form.reset();
-                } else {
-                    // API returned an error
-                    const errorMessage = data.message || 'An error occurred during submission.';
                     
-                    // If there are validation errors, display them
-                    if (data.errors && data.errors.length > 0) {
-                        const errorDetails = data.errors.map(err => `${err.param}: ${err.msg}`).join(', ');
-                        console.error('Validation errors:', data.errors);
-                        showAlert('error', `${errorMessage} (${errorDetails})`);
-                    } else {
-                        showAlert('error', errorMessage);
+                    // Close modal/popup if present
+                    const modal = form.closest('.modal');
+                    const popup = form.closest('.contact-popup');
+                    
+                    if (modal) modal.style.display = 'none';
+                    if (popup) popup.style.display = 'none';
+                } else {
+                    console.error('Form submission error:', result.errors || result.message);
+                    
+                    let errorMessage = 'Error submitting form. ';
+                    if (result.errors && Array.isArray(result.errors)) {
+                        errorMessage += result.errors.map(err => err.msg || err.message).join(', ');
+                    } else if (result.message) {
+                        errorMessage += result.message;
                     }
+                    
+                    showAlert(errorMessage, 'error');
                 }
             } catch (error) {
                 console.error('Form submission error:', error);
-                showAlert('error', 'Network error: Could not connect to the server. Please try again later.');
-            }
-            
-            // Reset button state
-            resetSubmissionState(submitBtn, originalBtnText);
-            isSubmitting = false;
-            });
-        });
-    
-    // Helper function to validate required fields
-    function validateRequiredFields(formObject, requiredFields) {
-        const missingFields = [];
-        requiredFields.forEach(field => {
-            if (!formObject[field] || formObject[field].trim() === '') {
-                missingFields.push(field.charAt(0).toUpperCase() + field.slice(1));
+                showAlert('An error occurred during submission. Please try again later.', 'error');
             }
         });
-        
-        if (missingFields.length > 0) {
-            showAlert('error', `Please fill out all required fields: ${missingFields.join(', ')}`);
-        }
-        
-        return missingFields;
-    }
-    
-    // Helper function to reset submission state
-    function resetSubmissionState(submitBtn, originalBtnText) {
-        if (submitBtn) {
-            submitBtn.textContent = originalBtnText;
-            submitBtn.disabled = false;
-        }
-        isSubmitting = false;
-    }
+    });
 }
 
 /**
@@ -1876,4 +1761,50 @@ function determineFormType(form) {
     
     // Default to contact if no matches
     return 'contact';
+}
+
+// Add a function to initialize contact buttons
+function setupContactButtons() {
+    // Set up the contact popup button
+    const contactBtn = document.getElementById('contactBtn');
+    const contactPopup = document.getElementById('contactPopup');
+    const closeContactPopup = document.getElementById('closeContactPopup');
+    
+    if (contactBtn && contactPopup) {
+        console.log('Contact button and popup found, setting up event listeners');
+        contactBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            contactPopup.style.display = 'flex';
+            console.log('Contact popup opened');
+        });
+        
+        if (closeContactPopup) {
+            closeContactPopup.addEventListener('click', function() {
+                contactPopup.style.display = 'none';
+                console.log('Contact popup closed via close button');
+            });
+        }
+        
+        // Close when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target === contactPopup) {
+                contactPopup.style.display = 'none';
+                console.log('Contact popup closed via outside click');
+            }
+        });
+    } else {
+        console.log('Contact button or popup not found on this page');
+    }
+    
+    // Also handle floating contact buttons with different IDs
+    const floatingContactBtns = document.querySelectorAll('.contact-float, .email-btn, [data-target="#contactPopup"]');
+    floatingContactBtns.forEach(btn => {
+        if (btn && btn !== contactBtn && contactPopup) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                contactPopup.style.display = 'flex';
+                console.log('Contact popup opened via alternative button');
+            });
+        }
+    });
 }
