@@ -569,4 +569,258 @@ router.delete('/submission/contact/:id', isAdmin, async (req, res) => {
     }
 });
 
+// @route   GET /api/admin/submissions/:id
+// @desc    Get submission by ID without knowing the type
+// @access  Private (Admin only)
+router.get('/submissions/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        let submission = null;
+        let type = null;
+
+        // Try to find the submission in each collection
+        submission = await ContactFormSubmission.findById(id);
+        if (submission) {
+            type = 'contact';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        submission = await FlightSubmission.findById(id);
+        if (submission) {
+            type = 'flight';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        // Check for domestic and international tour submissions
+        submission = await TourSubmission.findById(id);
+        if (submission) {
+            type = submission.tourType || 'domestic'; // Default to domestic if not specified
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        submission = await VisaSubmission.findById(id);
+        if (submission) {
+            type = 'visa';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        submission = await PassportSubmission.findById(id);
+        if (submission) {
+            type = 'passport';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        submission = await ForexSubmission.findById(id);
+        if (submission) {
+            type = 'forex';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        submission = await HoneymoonSubmission.findById(id);
+        if (submission) {
+            type = 'honeymoon';
+            return res.json({
+                success: true,
+                submission: {
+                    ...submission.toObject(),
+                    type,
+                    id: submission._id
+                }
+            });
+        }
+
+        // If we get here, no submission was found
+        return res.status(404).json({
+            success: false,
+            message: 'Submission not found'
+        });
+    } catch (err) {
+        console.error('Error finding submission by ID:', err.message);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error while finding submission'
+        });
+    }
+});
+
+// @route   POST /api/admin/submission/:type/:id/read
+// @desc    Mark submission as read
+// @access  Private (Admin only)
+router.post('/submission/:type/:id/read', isAdmin, async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        let submission;
+        let model;
+
+        // Based on type, determine the model to use
+        switch (type) {
+            case 'contact':
+                model = ContactFormSubmission;
+                break;
+            case 'flight':
+                model = FlightSubmission;
+                break;
+            case 'domestic':
+            case 'international':
+                model = TourSubmission;
+                break;
+            case 'visa':
+                model = VisaSubmission;
+                break;
+            case 'passport':
+                model = PassportSubmission;
+                break;
+            case 'forex':
+                model = ForexSubmission;
+                break;
+            case 'honeymoon':
+                model = HoneymoonSubmission;
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid submission type'
+                });
+        }
+
+        // Update the submission status to read
+        submission = await model.findByIdAndUpdate(
+            id,
+            { status: 'read', isRead: true },
+            { new: true }
+        );
+
+        if (!submission) {
+            return res.status(404).json({
+                success: false,
+                message: 'Submission not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Submission marked as read',
+            data: submission
+        });
+    } catch (err) {
+        console.error('Error marking submission as read:', err.message);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error while updating submission'
+        });
+    }
+});
+
+// @route   DELETE /api/admin/submission/:type/:id
+// @desc    Delete a submission
+// @access  Private (Admin only)
+router.delete('/submission/:type/:id', isAdmin, async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        let model;
+
+        // Based on type, determine the model to use
+        switch (type) {
+            case 'contact':
+                model = ContactFormSubmission;
+                break;
+            case 'flight':
+                model = FlightSubmission;
+                break;
+            case 'domestic':
+            case 'international':
+                model = TourSubmission;
+                // For tour submissions, we need to verify the tour type matches
+                const tourSubmission = await TourSubmission.findById(id);
+                if (tourSubmission && tourSubmission.tourType !== type) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Tour type mismatch'
+                    });
+                }
+                break;
+            case 'visa':
+                model = VisaSubmission;
+                break;
+            case 'passport':
+                model = PassportSubmission;
+                break;
+            case 'forex':
+                model = ForexSubmission;
+                break;
+            case 'honeymoon':
+                model = HoneymoonSubmission;
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid submission type'
+                });
+        }
+
+        // Delete the submission
+        const result = await model.findByIdAndDelete(id);
+        
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: 'Submission not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Submission deleted successfully'
+        });
+    } catch (err) {
+        console.error('Error deleting submission:', err.message);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error while deleting submission'
+        });
+    }
+});
+
 module.exports = router; 

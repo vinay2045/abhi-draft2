@@ -160,21 +160,42 @@ async function apiRequest(endpoint, options = {}) {
             throw new Error('Your session has expired. Please login again.');
         }
         
-        let data;
-        try {
-            // Safely parse JSON response
-            const text = await response.text();
-            data = text ? JSON.parse(text) : {};
-        } catch (parseError) {
-            console.error('JSON parsing error:', parseError);
-            throw new Error('Unable to parse server response. Please try again.');
-        }
-        
+        // Check if the response is 404 (Not Found) or other error status
         if (!response.ok) {
-            throw new Error(data.message || 'API request failed');
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Request failed with status ${response.status}`);
+            } else {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
         }
         
-        return data;
+        // Check content type to handle JSON vs non-JSON responses
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // Parse JSON response
+            const data = await response.json();
+            return data;
+        } else {
+            // For non-JSON responses
+            const text = await response.text();
+            console.warn('Non-JSON response received:', text.substring(0, 100) + '...');
+            
+            if (text.trim().startsWith('<')) {
+                // HTML response, likely an error
+                throw new Error('Received HTML instead of JSON. The server might be returning an error page.');
+            }
+            
+            // Try to parse as JSON anyway as a fallback
+            try {
+                return text ? JSON.parse(text) : {};
+            } catch (parseError) {
+                console.error('JSON parsing error:', parseError);
+                throw new Error('Received invalid data format from server.');
+            }
+        }
     } catch (error) {
         console.error('API request error:', error);
         throw error;

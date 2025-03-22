@@ -2096,10 +2096,8 @@ nav a {
     padding: 25px;
     border-radius: 12px;
     width: 90%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    justify-content: center;
+    align-items: center;
     max-width: 400px;
     position: relative;
     backdrop-filter: blur(10px);

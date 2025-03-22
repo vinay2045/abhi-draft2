@@ -197,7 +197,7 @@ async function fetchRecentSubmissions() {
         // Show loading state
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center">
+                <td colspan="8" class="text-center">
                     <div class="loading-spinner" style="margin: 20px auto;"></div>
                     <p>Loading recent submissions...</p>
                 </td>
@@ -212,7 +212,7 @@ async function fetchRecentSubmissions() {
         if (!submissions || submissions.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center">
+                    <td colspan="8" class="text-center">
                         <p>No recent submissions found.</p>
                     </td>
                 </tr>
@@ -223,13 +223,13 @@ async function fetchRecentSubmissions() {
         // Render submissions
         tableBody.innerHTML = '';
         
-        submissions.forEach(submission => {
+        submissions.forEach((submission, index) => {
             const row = document.createElement('tr');
             
-            // Format date
+            // Format date and time separately
             const submissionDate = new Date(submission.createdAt);
-            const formattedDate = submissionDate.toLocaleDateString() + ' ' + 
-                                 submissionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const formattedDate = submissionDate.toLocaleDateString();
+            const formattedTime = submissionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             // Get type badge class
             let badgeClass = 'bg-primary';
@@ -243,16 +243,22 @@ async function fetchRecentSubmissions() {
             if (submission.type === 'honeymoon') badgeClass = 'bg-info text-dark';
             
             row.innerHTML = `
-                <td>${submission.id}</td>
+                <td>${index + 1}</td>
+                <td>${submission.name || 'N/A'}</td>
+                <td>${submission.phone || 'N/A'}</td>
+                <td>${submission.email || 'N/A'}</td>
                 <td>
                     <span class="badge ${badgeClass}">${submission.type}</span>
                 </td>
-                <td>${submission.name}</td>
                 <td>${formattedDate}</td>
+                <td>${formattedTime}</td>
                 <td>
                     <div class="action-buttons">
-                        <button type="button" class="btn btn-primary view-btn" data-id="${submission.id}" data-type="${submission.type}">
+                        <button type="button" class="btn btn-primary view-btn" data-id="${submission.id}" data-type="${submission.type}" title="View Details">
                             <i class='bx bx-show'></i>
+                        </button>
+                        <button type="button" class="btn btn-danger delete-btn" data-id="${submission.id}" data-type="${submission.type}" title="Delete">
+                            <i class='bx bx-trash'></i>
                         </button>
                     </div>
                 </td>
@@ -268,8 +274,37 @@ async function fetchRecentSubmissions() {
                 const id = this.getAttribute('data-id');
                 const type = this.getAttribute('data-type');
                 
-                // Navigate to the specific submission page
-                window.location.href = `/admin/submissions.html?id=${id}&type=${type}`;
+                // Navigate to the view submission page with both id and type parameters
+                window.location.href = `/admin/view.html?id=${id}&type=${type}`;
+            });
+        });
+        
+        // Add event listeners for delete buttons
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                if (confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    
+                    try {
+                        // Call the delete API endpoint
+                        const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (response && response.success) {
+                            // Refresh the submissions list
+                            fetchRecentSubmissions();
+                            alert('Submission deleted successfully');
+                        } else {
+                            alert('Failed to delete submission');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting submission:', error);
+                        alert('Error deleting submission: ' + error.message);
+                    }
+                }
             });
         });
         
@@ -279,7 +314,7 @@ async function fetchRecentSubmissions() {
         // Show error state
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center">
+                <td colspan="8" class="text-center">
                     <p class="text-danger">Error loading submissions: ${error.message}</p>
                 </td>
             </tr>
