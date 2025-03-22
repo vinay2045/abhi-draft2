@@ -237,7 +237,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="passport-type">Passport Type</label>
-                                    <select id="passport-type" name="passportType" required>
+                                    <select id="passport-type" name="applicationType" required>
                                         <option value="">Select Passport Type</option>
                                         <option value="new">New Passport</option>
                                         <option value="renewal">Passport Renewal</option>
@@ -253,13 +253,16 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="date">Preferred Appointment Date</label>
-                                    <input type="date" id="date" name="appointmentDate" required>
+                                    <input type="date" id="date" name="expectedDate" required>
                                 </div>
                             </div>
                             <div class="form-group full-width">
                                 <label for="message">Additional Information</label>
                                 <textarea id="message" name="message" placeholder="Any specific requirements or questions about your passport application?"></textarea>
                             </div>
+                            <input type="hidden" name="urgency" value="Normal">
+                            <input type="hidden" name="numberOfApplicants" value="1">
+                            <input type="hidden" name="formType" value="passport">
                             <button type="submit" class="btn-primary">Submit Enquiry</button>
                         </form>
                     </div>
@@ -386,5 +389,4 @@
         </div>
     </div>
 </body>
-</html> 
 </html> 

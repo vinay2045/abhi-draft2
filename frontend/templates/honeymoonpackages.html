@@ -231,7 +231,7 @@
                         </div>
                         <div class="honeymoon-form-group">
                             <label for="wedding-date">Wedding Date</label>
-                            <input type="date" id="wedding-date" name="wedding-date">
+                            <input type="date" id="wedding-date" name="weddingDate">
                         </div>
                     </div>
                     <div class="honeymoon-form-row">
@@ -250,13 +250,13 @@
                         </div>
                         <div class="honeymoon-form-group">
                             <label for="other-destination">If Other, Please Specify</label>
-                            <input type="text" id="other-destination" name="other-destination" placeholder="Enter your preferred destination">
+                            <input type="text" id="other-destination" name="otherDestination" placeholder="Enter your preferred destination">
                         </div>
                     </div>
                     <div class="honeymoon-form-row">
                         <div class="honeymoon-form-group">
                             <label for="travel-dates">Expected Travel Dates</label>
-                            <input type="date">
+                            <input type="date" id="travel-dates" name="travelDates" required>
                         </div>
                         <div class="honeymoon-form-group">
                             <label for="duration">Duration</label>
@@ -296,6 +296,7 @@
                         <label for="message">Special Requirements or Interests</label>
                         <textarea id="message" name="message" placeholder="Tell us about any special requirements, interests, or activities you'd like to include in your honeymoon package"></textarea>
                     </div>
+                    <input type="hidden" name="formType" value="honeymoon">
                     <button type="submit" class="honeymoon-submit-btn">Submit Enquiry</button>
                 </form>
             </div>
