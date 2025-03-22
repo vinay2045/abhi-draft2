@@ -235,7 +235,7 @@ function setupHeroCarousel() {
             
             showSlide(slideIndex);
             console.log('Auto-advancing to slide:', slideIndex + 1);
-        }, 2000); // Use 2000ms (2 seconds) for better user experience
+        }, 1000); // Use 2000ms (2 seconds) for better user experience
         
         console.log('Slideshow interval started with ID:', slideInterval);
     }
@@ -955,7 +955,7 @@ function setupFormSubmissions() {
                 
                 if (result.success) {
                     console.log('Form submission successful:', result);
-                    showAlert('Form submitted successfully!', 'success');
+                    showAlert('success', 'Thank you for your submission. Our team will contact you shortly.');
                     form.reset();
                     
                     // Close modal/popup if present
@@ -974,11 +974,11 @@ function setupFormSubmissions() {
                         errorMessage += result.message;
                     }
                     
-                    showAlert(errorMessage, 'error');
+                    showAlert('error', errorMessage);
                 }
             } catch (error) {
                 console.error('Form submission error:', error);
-                showAlert('An error occurred during submission. Please try again later.', 'error');
+                showAlert('error', 'An error occurred during submission. Please try again later.');
             }
         });
     });
@@ -1012,37 +1012,31 @@ function showAlert(type, message) {
     notification.style.right = '20px';
     notification.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
     notification.style.color = type === 'success' ? '#155724' : '#721c24';
-    notification.style.padding = '12px 15px';
-    notification.style.borderRadius = '4px';
+    notification.style.border = type === 'success' ? '1px solid #c3e6cb' : '1px solid #f5c6cb';
+    notification.style.padding = '15px 20px';
+    notification.style.borderRadius = '5px';
     notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
     notification.style.zIndex = '10000';
-    notification.style.minWidth = '300px';
+    notification.style.minWidth = '320px';
     notification.style.display = 'flex';
     notification.style.justifyContent = 'space-between';
     notification.style.alignItems = 'center';
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateX(50px)';
-    notification.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    notification.style.fontWeight = '500';
     
-    // Style the notification content
-    const content = notification.querySelector('.notification-content');
-    content.style.display = 'flex';
-    content.style.alignItems = 'center';
-    
-    // Style the icon
+    // Style for the icon
     const icon = notification.querySelector('i');
     icon.style.marginRight = '10px';
-    icon.style.fontSize = '1.2rem';
+    icon.style.fontSize = '24px';
+    icon.style.color = type === 'success' ? '#28a745' : '#dc3545';
     
-    // Style the close button
+    // Style for the close button
     const closeBtn = notification.querySelector('.notification-close');
     closeBtn.style.background = 'none';
     closeBtn.style.border = 'none';
-    closeBtn.style.color = 'inherit';
-    closeBtn.style.fontSize = '1.2rem';
+    closeBtn.style.fontSize = '20px';
     closeBtn.style.cursor = 'pointer';
     closeBtn.style.marginLeft = '10px';
-    closeBtn.style.opacity = '0.7';
+    closeBtn.style.color = type === 'success' ? '#155724' : '#721c24';
     
     // Add the notification to the document
     document.body.appendChild(notification);
