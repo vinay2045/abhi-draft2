@@ -173,16 +173,23 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-const PORT = process.env.PORT || 7777;
+const PORT = parseInt(process.env.PORT || 7777, 10);
 
 // Create server with port fallback mechanism
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
   .on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${PORT} is busy, trying ${PORT + 1}...`);
-      // Try the next port
-      server.close();
-      app.listen(PORT + 1, () => console.log(`Server running on port ${PORT + 1}`));
+      const fallbackPort = PORT + 1;
+      // Make sure fallback port is valid (below 65536)
+      if (fallbackPort < 65536) {
+        console.log(`Port ${PORT} is busy, trying ${fallbackPort}...`);
+        // Try the next port
+        server.close();
+        app.listen(fallbackPort, () => console.log(`Server running on port ${fallbackPort}`));
+      } else {
+        console.error('Cannot find available port. Please manually specify a different port.');
+        process.exit(1);
+      }
     } else {
       console.error('Server error:', err);
     }
