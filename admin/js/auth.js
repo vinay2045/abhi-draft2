@@ -154,16 +154,17 @@ async function apiRequest(endpoint, options = {}) {
     // Normalize endpoint by ensuring it starts with a slash
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
-    // Construct the full URL
+    // Construct the full URL correctly handling admin endpoints
+    // If the endpoint already contains '/admin/', don't add it again in the API_URL
     const baseURL = window.location.origin;
     const port = baseURL.includes('localhost') ? '7777' : ''; // Use port 7777 for localhost
     const serverURL = port ? `${baseURL.split(':')[0]}:${baseURL.split(':')[1]}:${port}` : baseURL;
     
-    // Build the complete URL - fix the URL construction
+    // Build the complete URL - fix the URL construction to avoid duplicate 'admin'
     let url;
     if (normalizedEndpoint.startsWith('/admin/')) {
-        // For admin endpoints, KEEP 'admin' in the path
-        url = `${serverURL}${API_URL}/admin${normalizedEndpoint.replace('/admin', '')}`;
+        // For admin endpoints, use /api directly without adding 'admin' again
+        url = `${serverURL}${API_URL}${normalizedEndpoint.replace('/admin', '')}`;
     } else {
         // For non-admin endpoints, use as is
         url = `${serverURL}${API_URL}${normalizedEndpoint}`;

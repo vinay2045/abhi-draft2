@@ -745,8 +745,6 @@ router.delete('/submission/:type/:id', isAdmin, async (req, res) => {
 // @access  Private (Admin only)
 router.get('/submissions/all', isAdmin, async (req, res) => {
     try {
-        console.log('Received request to /submissions/all with params:', req.query);
-        
         // Parse query parameters with defaults
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -757,21 +755,13 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
         
         // Get type parameter and set default if not provided or invalid
         let type = req.query.type || 'all';
-        console.log(`Received type parameter: "${type}"`);
-        
-        // Force convert type to string to ensure proper validation
-        type = String(type).toLowerCase();
-        
-        // Always accept 'all' as a valid type, regardless of case
-        if (type.toLowerCase() === 'all') {
+        if (!validTypes.includes(type)) {
+            console.log(`Invalid submission type '${type}' received, defaulting to 'all'`);
             type = 'all';
-            console.log('Type parameter is "all", proceeding with all types');
-        } else if (!validTypes.includes(type)) {
-            console.log(`Type parameter "${type}" is invalid, defaulting to "all"`);
-            type = 'all';
-        } else {
-            console.log(`Using valid type: "${type}"`);
         }
+        
+        // Log request for debugging
+        console.log(`Processing submissions request: type=${type}, page=${page}, limit=${limit}`);
         
         // Other filters
         const status = req.query.status || 'all';
@@ -825,8 +815,6 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
             ...(Object.keys(statusFilter).length > 0 ? statusFilter : {})
         };
         
-        console.log('Using base filter:', JSON.stringify(baseFilter));
-        
         // Define models to query based on type
         let modelsToQuery = [];
         
@@ -842,13 +830,11 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
                 { model: ForexSubmission, type: 'forex' },
                 { model: HoneymoonSubmission, type: 'honeymoon' }
             ];
-            console.log('Querying all submission types');
         } else if (type === 'domestic' || type === 'international') {
             // Query specific tour type
             modelsToQuery = [
                 { model: TourSubmission, tourType: type, type }
             ];
-            console.log(`Querying ${type} tour submissions only`);
         } else {
             // Map type to model
             const modelMap = {
@@ -862,20 +848,6 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
             
             if (modelMap[type]) {
                 modelsToQuery = [{ model: modelMap[type], type }];
-                console.log(`Querying ${type} submissions only`);
-            } else {
-                // Fallback to all if something went wrong
-                console.log(`No model found for type "${type}", defaulting to all types`);
-                modelsToQuery = [
-                    { model: ContactFormSubmission, type: 'contact' },
-                    { model: FlightSubmission, type: 'flight' },
-                    { model: TourSubmission, tourType: 'domestic', type: 'domestic' },
-                    { model: TourSubmission, tourType: 'international', type: 'international' },
-                    { model: VisaSubmission, type: 'visa' },
-                    { model: PassportSubmission, type: 'passport' },
-                    { model: ForexSubmission, type: 'forex' },
-                    { model: HoneymoonSubmission, type: 'honeymoon' }
-                ];
             }
         }
         
@@ -902,8 +874,8 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
                     // Fetch documents with pagination
                     const submissions = await model.find(filter)
                         .sort({ createdAt: -1 })
-                        .skip(modelsToQuery.length > 1 ? 0 : skip) // Skip only for specific type queries
-                        .limit(modelsToQuery.length > 1 ? 1000 : limit) // For multiple models, get more and paginate after combining
+                        .skip(type === 'all' ? 0 : skip) // Skip only for specific type queries
+                        .limit(type === 'all' ? 1000 : limit) // For 'all', get more and paginate after combining
                         .lean();
                     
                     // Format submissions with type and convert _id to id for consistency
@@ -913,18 +885,15 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
                         type
                     }));
                     
-                    console.log(`Found ${count} ${type} submissions`);
-                    
                     return {
                         submissions: formattedSubmissions,
                         count
                     };
                 }
                 
-                console.log(`No ${type} submissions found matching filters`);
                 return { submissions: [], count: 0 };
             } catch (error) {
-                console.error(`Error querying ${type} submissions:`, error.message);
+                console.error(`Error querying ${type} submissions:`, error);
                 return { submissions: [], count: 0 };
             }
         });
@@ -938,17 +907,13 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
             totalCount += result.count;
         });
         
-        console.log(`Total submissions found across all types: ${totalCount}`);
-        
         // Sort all submissions by date descending
         allSubmissions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
-        // Apply final pagination for multiple models
-        const paginatedSubmissions = modelsToQuery.length > 1 
+        // Apply final pagination for 'all' type
+        const paginatedSubmissions = type === 'all' 
             ? allSubmissions.slice(skip, skip + limit)
             : allSubmissions;
-        
-        console.log(`Returning ${paginatedSubmissions.length} submissions for page ${page}`);
         
         // Return response
         res.json({
@@ -963,9 +928,7 @@ router.get('/submissions/all', isAdmin, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('Error in /submissions/all endpoint:', error);
-        
-        // Return a friendly error response
+        console.error('Error fetching submissions:', error);
         res.status(500).json({
             success: false,
             message: 'Server error while fetching submissions',

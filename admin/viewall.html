@@ -421,7 +421,7 @@
                 const itemsPerPageSelect = document.getElementById('itemsPerPage');
                 
                 // Use safe values with defaults
-                const typeValue = typeFilter ? typeFilter.value : 'all';
+                const type = typeFilter ? typeFilter.value : 'all';
                 const status = statusFilter ? statusFilter.value : 'all';
                 const fromDate = fromDateInput && fromDateInput.value ? fromDateInput.value : '';
                 const toDate = toDateInput && toDateInput.value ? toDateInput.value : '';
@@ -433,8 +433,7 @@
                 params.append('page', page);
                 params.append('limit', limit);
                 
-                // Always include type as 'all' regardless of the selected value
-                // This is a workaround for the server-side validation issue
+                // Always include the type parameter as 'all'
                 params.append('type', 'all');
                 
                 if (status !== 'all') {
