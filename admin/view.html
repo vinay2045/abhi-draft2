@@ -634,7 +634,8 @@
                             
                             // Mark submission as read - ensure we have the type from the submission object
                             const type = submission.type || 'unknown';
-                            const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${submission.id}/read`, {
+                            // Fix the endpoint path to match server.js and ensure consistency with viewall.html
+                            const response = await window.AdminAuth.apiRequest(`/submission/${type}/${submission._id || submission.id}/read`, {
                                 method: 'POST'
                             });
                             
@@ -768,4 +769,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

@@ -546,10 +546,16 @@ app.post('/api/submission/:type/:id/read', async (req, res) => {
       });
     }
 
-    // Mark as read
-    submission.isRead = true;
-    submission.readAt = new Date();
-    await submission.save();
+    // Update the submission status to read
+    submission = await model.findByIdAndUpdate(
+      id,
+      { 
+        status: 'read', 
+        isRead: true, 
+        readAt: new Date() 
+      },
+      { new: true }
+    );
 
     res.json({
       success: true,
@@ -616,7 +622,11 @@ app.post('/api/submission/:type/:id/unread', async (req, res) => {
     // Update the submission status to unread
     submission = await model.findByIdAndUpdate(
       id,
-      { status: 'new', isRead: false, readAt: null },
+      { 
+        status: 'new', 
+        isRead: false, 
+        readAt: null 
+      },
       { new: true }
     );
 
