@@ -8,29 +8,14 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { uploadMiddleware, handleFileUpload } = require('./middleware/upload');
 const fs = require('fs');
+// const http = require('http');
+// We don't need Socket.io anymore
+// const socketIo = require('socket.io');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-
-// Connect to MongoDB with improved options
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    // Wait 5 seconds before retrying
-    console.log('Retrying connection in 5 seconds...');
-    setTimeout(connectDB, 5000);
-  }
-};
-
-connectDB();
 
 // Security middlewares
 app.use(helmet({
@@ -417,7 +402,7 @@ app.get('/api/submission/:type/:id', async (req, res) => {
     const PassportSubmission = require('./models/passportSubmission');
     const ForexSubmission = require('./models/forexSubmission');
     const HoneymoonSubmission = require('./models/honeymoonSubmission');
-    
+
     let submission;
 
     // Based on type, query the appropriate collection
@@ -557,6 +542,18 @@ app.post('/api/submission/:type/:id/read', async (req, res) => {
       { new: true }
     );
 
+    // Emit real-time update to all connected admin clients
+    // if (global.io) {
+    //   global.io.to('admins').emit('submission_status_changed', {
+    //     id,
+    //     type,
+    //     status: 'read',
+    //     isRead: true,
+    //     readAt: new Date()
+    //   });
+    //   console.log(`Emitted status change event (read) for ${type}:${id}`);
+    // }
+
     res.json({
       success: true,
       message: 'Submission marked as read'
@@ -636,6 +633,18 @@ app.post('/api/submission/:type/:id/unread', async (req, res) => {
         message: 'Submission not found'
       });
     }
+
+    // Emit real-time update to all connected admin clients
+    // if (global.io) {
+    //   global.io.to('admins').emit('submission_status_changed', {
+    //     id,
+    //     type,
+    //     status: 'new',
+    //     isRead: false,
+    //     readAt: null
+    //   });
+    //   console.log(`Emitted status change event (unread) for ${type}:${id}`);
+    // }
 
     res.json({
       success: true,
@@ -830,6 +839,18 @@ app.put('/api/submission/:type/:id/status', async (req, res) => {
       });
     }
 
+    // Emit real-time update to all connected admin clients
+    // if (global.io) {
+    //   global.io.to('admins').emit('submission_status_changed', {
+    //     id,
+    //     type,
+    //     status: status,
+    //     isRead: status === 'read' ? true : false,
+    //     readAt: status === 'read' ? new Date() : null
+    //   });
+    //   console.log(`Emitted status change event for ${type}:${id}`);
+    // }
+
     res.json({
       success: true,
       message: 'Status updated successfully',
@@ -974,6 +995,73 @@ app.get('/api/export/submissions', async (req, res) => {
   }
 });
 
+// Connect to MongoDB with improved options
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    // Wait 5 seconds before retrying
+    console.log('Retrying connection in 5 seconds...');
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Server Error'
+  });
+});
+
+// Process-wide error handlers to prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! Shutting down...', err);
+  console.error(err.name, err.message, err.stack);
+  // Give the server time to finish current requests before exiting
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION!', err);
+  console.error(err.name, err.message, err.stack);
+  // Don't exit the process, just log the error
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM RECEIVED. Shutting down gracefully');
+  process.exit(0);
+});
+
+const PORT = parseInt(process.env.PORT || 7777, 10);
+
+// Create server with port fallback mechanism
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+  .on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const fallbackPort = PORT + 1;
+      // Make sure fallback port is valid (below 65536)
+      if (fallbackPort < 65536) {
+        console.log(`Port ${PORT} is busy, trying ${fallbackPort}...`);
+        // Try the next port
+        app.listen(fallbackPort, () => console.log(`Server running on port ${fallbackPort}`));
+      } else {
+        console.error('Cannot find available port. Please manually specify a different port.');
+        process.exit(1);
+      }
+    } else {
+      console.error('Server error:', err);
+    }
+  }); 
+
 // Serve static files for production
 if (process.env.NODE_ENV === 'production') {
   // Redirect all non-API requests to index.html
@@ -1027,53 +1115,3 @@ if (process.env.NODE_ENV === 'production') {
     });
   });
 }
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Server Error'
-  });
-});
-
-// Process-wide error handlers to prevent crashes
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION! Shutting down...', err);
-  console.error(err.name, err.message, err.stack);
-  // Give the server time to finish current requests before exiting
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION!', err);
-  console.error(err.name, err.message, err.stack);
-  // Don't exit the process, just log the error
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM RECEIVED. Shutting down gracefully');
-  process.exit(0);
-});
-
-const PORT = parseInt(process.env.PORT || 7777, 10);
-
-// Create server with port fallback mechanism
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
-  .on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      const fallbackPort = PORT + 1;
-      // Make sure fallback port is valid (below 65536)
-      if (fallbackPort < 65536) {
-        console.log(`Port ${PORT} is busy, trying ${fallbackPort}...`);
-        // Try the next port
-        server.close();
-        app.listen(fallbackPort, () => console.log(`Server running on port ${fallbackPort}`));
-      } else {
-        console.error('Cannot find available port. Please manually specify a different port.');
-        process.exit(1);
-      }
-    } else {
-      console.error('Server error:', err);
-    }
-  }); 

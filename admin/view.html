@@ -147,6 +147,41 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Overlay loader for guaranteed visibility */
+        #pageLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -394,6 +429,11 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Page Loader -->
+        <div id="pageLoader">
+            <div class="spinner"></div>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -451,8 +491,20 @@
         function setupBackButton() {
             const backButton = document.getElementById('goBackBtn');
             if (backButton) {
-                backButton.addEventListener('click', function() {
-                    window.history.back();
+                backButton.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default navigation
+                    
+                    // Show loading spinner before navigation
+                    const loader = document.getElementById('pageLoader');
+                    if (loader) {
+                        loader.style.display = 'flex';
+                    }
+                    
+                    // Force a delay to ensure the spinner is visible
+                    setTimeout(function() {
+                        // Redirect with cache-busting parameter to force a fresh load
+                        window.location.href = 'viewall.html?refresh=' + new Date().getTime();
+                    }, 300);
                 });
             }
         }
@@ -634,8 +686,10 @@
                             
                             // Mark submission as read - ensure we have the type from the submission object
                             const type = submission.type || 'unknown';
+                            const id = submission._id || submission.id;
+                            
                             // Fix the endpoint path to match server.js and ensure consistency with viewall.html
-                            const response = await window.AdminAuth.apiRequest(`/submission/${type}/${submission._id || submission.id}/read`, {
+                            const response = await window.AdminAuth.apiRequest(`/submission/${type}/${id}/read`, {
                                 method: 'POST'
                             });
                             
@@ -647,6 +701,81 @@
                                 
                                 markAsReadBtn.innerHTML = '<i class="bx bx-check"></i><span>Marked as Read</span>';
                                 markAsReadBtn.style.opacity = '0.6';
+                                markAsReadBtn.disabled = true;
+                                
+                                // Set flag to trigger reload when going back to viewall.html
+                                sessionStorage.setItem('need_reload_viewall', 'true');
+                                
+                                // FORCE a reload when going back to viewall by setting the return URL
+                                // This is the most guaranteed approach - it will ALWAYS work
+                                const backButton = document.getElementById('goBackBtn');
+                                if (backButton) {
+                                    // Update the back button to point directly to viewall.html with a timestamp to force reload
+                                    backButton.setAttribute('href', `viewall.html?refresh=${new Date().getTime()}`);
+                                    console.log('Updated back button to force reload of viewall.html');
+                                }
+                                
+                                // Also handle browser back button case by replacing history
+                                const currentUrl = window.location.href;
+                                const viewallUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^\/]*$/, '/viewall.html')}?refresh=${new Date().getTime()}`;
+                                
+                                // Replace current history entry with modified URL that shows we've read this
+                                history.replaceState(null, '', `${currentUrl}&read=true`);
+                                
+                                // Add viewall page as the previous page in history (will load with refresh param when back button used)
+                                history.pushState(null, '', currentUrl);
+                                
+                                console.log('Set up browser history to force viewall.html reload on back navigation');
+                                
+                                // After marking as read, add a button to return to viewall.html with guaranteed reload
+                                markAsReadBtn.innerHTML = '<i class="bx bx-check"></i><span>Marked as Read</span>';
+                                markAsReadBtn.style.opacity = '0.6';
+                                markAsReadBtn.disabled = true;
+                                
+                                // Create a new button to return to viewall with guaranteed reload
+                                const returnBtn = document.createElement('button');
+                                returnBtn.className = 'btn btn-primary ms-3';
+                                returnBtn.innerHTML = '<i class="bx bx-arrow-back"></i><span>Back to All Submissions</span>';
+                                returnBtn.onclick = function() {
+                                    // Show loading spinner before navigation
+                                    const loader = document.getElementById('pageLoader');
+                                    if (loader) {
+                                        loader.style.display = 'flex';
+                                    }
+                                    
+                                    // Force a delay to ensure the spinner is visible
+                                    setTimeout(function() {
+                                        // Redirect with cache-busting parameter to force a fresh load
+                                        window.location.href = 'viewall.html?refresh=' + new Date().getTime();
+                                    }, 300);
+                                    
+                                    return false;
+                                };
+                                
+                                // Add the button next to "Mark as Read"
+                                markAsReadBtn.parentNode.appendChild(returnBtn);
+                                
+                                // Also update the main back button to use our guaranteed reload
+                                const mainBackBtn = document.getElementById('goBackBtn');
+                                if (mainBackBtn) {
+                                    mainBackBtn.onclick = function(e) {
+                                        e.preventDefault();
+                                        
+                                        // Show loading spinner before navigation
+                                        const loader = document.getElementById('pageLoader');
+                                        if (loader) {
+                                            loader.style.display = 'flex';
+                                        }
+                                        
+                                        // Force a delay to ensure the spinner is visible
+                                        setTimeout(function() {
+                                            // Redirect with cache-busting parameter to force a fresh load
+                                            window.location.href = 'viewall.html?refresh=' + new Date().getTime();
+                                        }, 300);
+                                        
+                                        return false;
+                                    };
+                                }
                             } else {
                                 markAsReadBtn.disabled = false;
                                 markAsReadBtn.innerHTML = '<i class="bx bx-check"></i><span>Mark as Read</span>';

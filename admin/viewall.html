@@ -905,6 +905,18 @@
             // Reload submissions to update the table
             loadSubmissions(getCurrentPage());
         }
+        
+        // Very simple approach: just reload the page when coming back from view.html
+        window.addEventListener('pageshow', function(event) {
+            console.log("Page show event triggered");
+            
+            // Check if we need to reload
+            if (sessionStorage.getItem('need_reload_viewall') === 'true') {
+                console.log("Detected need_reload_viewall flag, reloading page");
+                sessionStorage.removeItem('need_reload_viewall');
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 </html>
