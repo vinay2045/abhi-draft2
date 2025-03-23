@@ -12,6 +12,20 @@
     <link rel="stylesheet" href="css/admin-style.css">
     <!-- ViewAll CSS -->
     <link rel="stylesheet" href="css/viewall.css">
+    <style>
+        /* Make status badges clickable */
+        .status-badge {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .status-badge:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        .status-badge:active {
+            transform: scale(0.95);
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -194,16 +208,6 @@
                         </div>
                         
                         <div class="filter-group">
-                            <label for="fromDate">From Date</label>
-                            <input type="date" id="fromDate">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="toDate">To Date</label>
-                            <input type="date" id="toDate">
-                        </div>
-                        
-                        <div class="filter-group">
                             <label for="searchTerm">Search</label>
                             <input type="text" id="searchTerm" placeholder="Search by name, email, phone...">
                         </div>
@@ -292,14 +296,6 @@
             // Initialize UI
             initializeSidebar();
             
-            // Set default date range (last 30 days)
-            const today = new Date();
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(today.getDate() - 30);
-            
-            document.getElementById('toDate').valueAsDate = today;
-            document.getElementById('fromDate').valueAsDate = thirtyDaysAgo;
-            
             // Load submissions with default filters
             loadSubmissions();
             
@@ -314,16 +310,19 @@
                 document.getElementById('statusFilter').value = 'all';
                 document.getElementById('searchTerm').value = '';
                 
-                // Reset date range to last 30 days
-                document.getElementById('toDate').valueAsDate = today;
-                document.getElementById('fromDate').valueAsDate = thirtyDaysAgo;
-                
                 // Reload submissions
                 loadSubmissions(1);
             });
             
             document.getElementById('itemsPerPage').addEventListener('change', function() {
                 loadSubmissions(1); // Reset to first page when changing items per page
+            });
+            
+            // Refresh data when page becomes visible again (after viewing a submission)
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    loadSubmissions(getCurrentPage());
+                }
             });
             
             // Initialize export and delete all functionality
@@ -415,16 +414,12 @@
                 // Get filter values with proper null checks
                 const typeFilter = document.getElementById('typeFilter');
                 const statusFilter = document.getElementById('statusFilter');
-                const fromDateInput = document.getElementById('fromDate');
-                const toDateInput = document.getElementById('toDate');
                 const searchInput = document.getElementById('searchTerm');
                 const itemsPerPageSelect = document.getElementById('itemsPerPage');
                 
                 // Use safe values with defaults
                 const type = typeFilter ? typeFilter.value : 'all';
                 const status = statusFilter ? statusFilter.value : 'all';
-                const fromDate = fromDateInput && fromDateInput.value ? fromDateInput.value : '';
-                const toDate = toDateInput && toDateInput.value ? toDateInput.value : '';
                 const search = searchInput && searchInput.value ? searchInput.value : '';
                 const limit = itemsPerPageSelect ? parseInt(itemsPerPageSelect.value || '10') : 10;
                 
@@ -433,19 +428,11 @@
                 params.append('page', page);
                 params.append('limit', limit);
                 
-                // Always include the type parameter as 'all'
-                params.append('type', 'all');
+                // Use the actual type filter value from the dropdown
+                params.append('type', type);
                 
                 if (status !== 'all') {
                     params.append('status', status);
-                }
-                
-                if (fromDate) {
-                    params.append('fromDate', fromDate);
-                }
-                
-                if (toDate) {
-                    params.append('toDate', toDate);
                 }
                 
                 if (search) {
@@ -457,10 +444,10 @@
                     throw new Error('Authentication utility not available');
                 }
                 
-                console.log(`Requesting: /admin/submissions/all with params: ${params.toString()}`);
+                console.log(`Requesting: /submissions/all with params: ${params.toString()}`);
                 
                 // Make the API request
-                const data = await window.AdminAuth.apiRequest(`/admin/submissions/all?${params.toString()}`);
+                const data = await window.AdminAuth.apiRequest(`/submissions/all?${params.toString()}`);
                 
                 // Validate response
                 if (!data || !data.success) {
@@ -538,9 +525,19 @@
                 const formattedDate = createdAt.toLocaleDateString();
                 const formattedTime = createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
-                // Get status class
-                const statusClass = (submission.status === 'read' || submission.isRead) ? 'read' : 'new';
-                const statusLabel = (submission.status === 'read' || submission.isRead) ? 'Read' : 'New';
+                // Get status class - improve status detection with more robust checks
+                // Ensure we check multiple ways the status might be represented
+                const isRead = (
+                    submission.status === 'read' || 
+                    submission.isRead === true || 
+                    String(submission.isRead).toLowerCase() === 'true' ||
+                    (submission.readAt && submission.readAt !== null)
+                );
+                const statusClass = isRead ? 'read' : 'new';
+                const statusLabel = isRead ? 'Read' : 'New';
+                
+                // Store the status in a data attribute for the click handler
+                const statusDataAttr = isRead ? 'read' : 'new';
                 
                 // Get type badge class
                 let typeBadgeClass = 'bg-primary';
@@ -568,7 +565,7 @@
                         <span class="type-badge ${typeBadgeClass}">${submission.type}</span>
                     </td>
                     <td>
-                        <span class="status-badge ${statusClass}">${statusLabel}</span>
+                        <span class="status-badge ${statusClass}" data-status="${statusDataAttr}">${statusLabel}</span>
                     </td>
                     <td>${formattedDate}</td>
                     <td>${formattedTime}</td>
@@ -595,48 +592,94 @@
         }
         
         function addActionButtonListeners() {
-            // View buttons
-            const viewButtons = document.querySelectorAll('.action-button.view');
-            viewButtons.forEach(button => {
+            // View submission button
+            document.querySelectorAll('.action-button.view').forEach(button => {
                 button.addEventListener('click', function() {
                     const id = this.getAttribute('data-id');
                     const type = this.getAttribute('data-type');
-                    window.location.href = `/admin/view.html?id=${id}&type=${type}`;
+                    
+                    // Navigate to the view page
+                    window.location.href = `view.html?id=${id}&type=${type}`;
                 });
             });
             
-            // Delete buttons
-            const deleteButtons = document.querySelectorAll('.action-button.delete');
-            deleteButtons.forEach(button => {
+            // Delete submission button
+            document.querySelectorAll('.action-button.delete').forEach(button => {
                 button.addEventListener('click', async function() {
                     const id = this.getAttribute('data-id');
                     const type = this.getAttribute('data-type');
                     
-                    if (confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+                    if (confirm('Are you sure you want to delete this submission?')) {
                         try {
-                            // Disable button during deletion
-                            this.disabled = true;
-                            this.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i>';
-                            
                             // Call API to delete
-                            const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${id}`, {
+                            const response = await window.AdminAuth.apiRequest(`/submission/${type}/${id}`, {
                                 method: 'DELETE'
                             });
                             
                             if (response && response.success) {
+                                // Show success message
+                                alert('Submission deleted successfully!');
+                                
                                 // Reload submissions to update the table
                                 loadSubmissions(getCurrentPage());
-                                alert('Submission deleted successfully');
                             } else {
-                                throw new Error(response.message || 'Failed to delete submission');
+                                alert(response?.message || 'Failed to delete submission');
                             }
                         } catch (error) {
                             console.error('Error deleting submission:', error);
-                            alert('Error deleting submission: ' + error.message);
-                            // Reset button
-                            this.disabled = false;
-                            this.innerHTML = '<i class="bx bx-trash"></i>';
+                            alert(`Error: ${error.message || 'Unknown error'}`);
                         }
+                    }
+                });
+            });
+
+            // Add mark as read/unread toggle functionality
+            document.querySelectorAll('.status-badge').forEach(badge => {
+                badge.addEventListener('click', async function() {
+                    const row = this.closest('tr');
+                    const viewButton = row.querySelector('.action-button.view');
+                    
+                    if (!viewButton) return;
+                    
+                    const id = viewButton.getAttribute('data-id');
+                    const type = viewButton.getAttribute('data-type');
+                    const isCurrentlyRead = this.getAttribute('data-status') === 'read';
+                    
+                    try {
+                        // Toggle the status
+                        const newStatus = isCurrentlyRead ? 'new' : 'read';
+                        
+                        // Make the API request to update status
+                        const endpoint = newStatus === 'read' 
+                            ? `/submission/${type}/${id}/read` 
+                            : `/submission/${type}/${id}/unread`;
+                            
+                        const method = 'POST';
+                        
+                        console.log(`Using endpoint: ${endpoint} with method: ${method}`);
+                        
+                        const response = await window.AdminAuth.apiRequest(endpoint, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response && response.success) {
+                            // Update the UI without reloading
+                            this.classList.toggle('read');
+                            this.classList.toggle('new');
+                            this.textContent = isCurrentlyRead ? 'New' : 'Read';
+                            this.setAttribute('data-status', newStatus);
+                            
+                            // Optionally reload data to ensure all views are in sync
+                            loadSubmissions(getCurrentPage());
+                        } else {
+                            alert(response?.message || 'Failed to update status');
+                        }
+                    } catch (error) {
+                        console.error('Error updating status:', error);
+                        alert(`Error: ${error.message || 'Unknown error'}`);
                     }
                 });
             });
@@ -716,12 +759,10 @@
             // Get current filters
             const type = document.getElementById('typeFilter').value;
             const status = document.getElementById('statusFilter').value;
-            const fromDate = document.getElementById('fromDate').value;
-            const toDate = document.getElementById('toDate').value;
             const search = document.getElementById('searchTerm').value;
             
             // Build export URL with current filters
-            let exportUrl = '/admin/export/submissions?format=csv';
+            let exportUrl = `/export/submissions?format=csv`;
             
             if (type !== 'all') {
                 exportUrl += `&type=${type}`;
@@ -731,20 +772,60 @@
                 exportUrl += `&status=${status}`;
             }
             
-            if (fromDate) {
-                exportUrl += `&fromDate=${fromDate}`;
-            }
-            
-            if (toDate) {
-                exportUrl += `&toDate=${toDate}`;
-            }
-            
             if (search) {
                 exportUrl += `&search=${encodeURIComponent(search)}`;
             }
             
-            // Trigger download
-            window.open(exportUrl, '_blank');
+            console.log(`Exporting submissions with URL: ${exportUrl}`);
+            
+            // Show loading indicator
+            const exportBtn = document.getElementById('exportBtn');
+            const originalBtnText = exportBtn.innerHTML;
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Exporting...';
+            
+            // For CSV download, we need to use a different approach to handle binary/text data
+            fetch(`${window.location.origin}/api/export/submissions?format=csv`, {
+                method: 'GET',
+                headers: {
+                    ...window.AdminAuth.getAuthHeaders()
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Export failed with status ${response.status}`);
+                }
+                return response.text(); // Get the raw CSV text
+            })
+            .then(csvContent => {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalBtnText;
+                
+                // Generate and trigger CSV download
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                
+                // Create download link and trigger click
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'submissions-export.csv';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // Show success message
+                alert('Export successful');
+            })
+            .catch(error => {
+                exportBtn.disabled = false;
+                exportBtn.innerHTML = originalBtnText;
+                alert(`Export error: ${error.message}`);
+                console.error('Export error:', error);
+            });
         }
         
         async function deleteSelectedSubmissions() {
@@ -777,7 +858,7 @@
                 
                 try {
                     // Call API to delete
-                    const response = await window.AdminAuth.apiRequest(`/admin/submission/${type}/${id}`, {
+                    const response = await window.AdminAuth.apiRequest(`/submission/${type}/${id}`, {
                         method: 'DELETE'
                     });
                     

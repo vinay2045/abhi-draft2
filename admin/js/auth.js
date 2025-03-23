@@ -157,8 +157,9 @@ async function apiRequest(endpoint, options = {}) {
     // Construct the full URL correctly handling admin endpoints
     // If the endpoint already contains '/admin/', don't add it again in the API_URL
     const baseURL = window.location.origin;
-    const port = baseURL.includes('localhost') ? '7777' : ''; // Use port 7777 for localhost
-    const serverURL = port ? `${baseURL.split(':')[0]}:${baseURL.split(':')[1]}:${port}` : baseURL;
+    // Use the current port instead of hardcoding 7777
+    const port = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+    const serverURL = `${window.location.protocol}//${window.location.hostname}:${port}`;
     
     // Build the complete URL - fix the URL construction to avoid duplicate 'admin'
     let url;

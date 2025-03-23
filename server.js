@@ -564,6 +564,83 @@ app.post('/api/submission/:type/:id/read', async (req, res) => {
   }
 });
 
+// Endpoint for marking submission as unread
+app.post('/api/submission/:type/:id/unread', async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    let submission;
+    let model;
+
+    // Based on type, determine the model to use
+    switch (type) {
+      case 'contact':
+        model = require('./models/contactFormSubmission');
+        break;
+      case 'flight':
+        model = require('./models/flightSubmission');
+        break;
+      case 'domestic':
+      case 'international':
+        model = require('./models/tourSubmission');
+        break;
+      case 'visa':
+        model = require('./models/visaSubmission');
+        break;
+      case 'passport':
+        model = require('./models/passportSubmission');
+        break;
+      case 'forex':
+        model = require('./models/forexSubmission');
+        break;
+      case 'honeymoon':
+        model = require('./models/honeymoonSubmission');
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid submission type'
+        });
+    }
+
+    // For tour submissions, verify the tour type
+    if (type === 'domestic' || type === 'international') {
+      const submissionCheck = await model.findById(id);
+      if (submissionCheck && submissionCheck.tourType !== type) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tour type mismatch'
+        });
+      }
+    }
+
+    // Update the submission status to unread
+    submission = await model.findByIdAndUpdate(
+      id,
+      { status: 'new', isRead: false, readAt: null },
+      { new: true }
+    );
+
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Submission marked as unread',
+      submission
+    });
+  } catch (err) {
+    console.error('Error marking submission as unread:', err.message);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while marking submission as unread'
+    });
+  }
+});
+
 // Endpoint for deleting a submission
 app.delete('/api/submission/:type/:id', async (req, res) => {
   try {
@@ -648,6 +725,245 @@ app.delete('/api/submission/:type/:id', async (req, res) => {
 // File upload route
 app.post('/api/upload', uploadMiddleware, handleFileUpload);
 
+// Helper function to escape CSV fields
+function escapeCsvField(field) {
+  if (field === null || field === undefined) {
+    return '';
+  }
+  
+  // Convert to string
+  const stringField = String(field);
+  
+  // Check if we need to escape
+  if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+    // Escape double quotes with double quotes
+    const escapedField = stringField.replace(/"/g, '""');
+    // Wrap in quotes
+    return `"${escapedField}"`;
+  }
+  
+  return stringField;
+}
+
+// Endpoint for updating submission status
+app.put('/api/submission/:type/:id/status', async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { status, isRead } = req.body;
+    
+    // Import required models
+    const ContactFormSubmission = require('./models/contactFormSubmission');
+    const FlightSubmission = require('./models/flightSubmission');
+    const TourSubmission = require('./models/tourSubmission');
+    const VisaSubmission = require('./models/visaSubmission');
+    const PassportSubmission = require('./models/passportSubmission');
+    const ForexSubmission = require('./models/forexSubmission');
+    const HoneymoonSubmission = require('./models/honeymoonSubmission');
+    
+    let model;
+
+    // Based on type, determine the appropriate model
+    switch (type) {
+      case 'contact':
+        model = ContactFormSubmission;
+        break;
+      case 'flight':
+        model = FlightSubmission;
+        break;
+      case 'domestic':
+      case 'international':
+        model = TourSubmission;
+        break;
+      case 'visa':
+        model = VisaSubmission;
+        break;
+      case 'passport':
+        model = PassportSubmission;
+        break;
+      case 'forex':
+        model = ForexSubmission;
+        break;
+      case 'honeymoon':
+        model = HoneymoonSubmission;
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid submission type'
+        });
+    }
+
+    // For tour submissions, verify the tour type
+    if (type === 'domestic' || type === 'international') {
+      const submission = await model.findById(id);
+      if (submission && submission.tourType !== type) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tour type mismatch'
+        });
+      }
+    }
+
+    // Update the submission status
+    const updateData = { 
+      status: status,
+      isRead: status === 'read' ? true : false,
+      readAt: status === 'read' ? new Date() : null
+    };
+
+    const updatedSubmission = await model.findByIdAndUpdate(id, updateData, { new: true });
+    
+    if (!updatedSubmission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Submission not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Status updated successfully',
+      submission: updatedSubmission
+    });
+  } catch (err) {
+    console.error('Error updating submission status:', err.message);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating submission status'
+    });
+  }
+});
+
+// Export submissions endpoint
+app.get('/api/export/submissions', async (req, res) => {
+  try {
+    // Parse query parameters
+    let type = req.query.type || 'all';
+    let status = req.query.status;
+    let search = req.query.search;
+    let format = req.query.format || 'csv';
+    
+    // Import required models
+    const ContactFormSubmission = require('./models/contactFormSubmission');
+    const FlightSubmission = require('./models/flightSubmission');
+    const TourSubmission = require('./models/tourSubmission');
+    const VisaSubmission = require('./models/visaSubmission');
+    const PassportSubmission = require('./models/passportSubmission');
+    const ForexSubmission = require('./models/forexSubmission');
+    const HoneymoonSubmission = require('./models/honeymoonSubmission');
+    
+    // Define models to query based on type
+    let models = [];
+    if (type === 'all') {
+      models = [
+        { model: ContactFormSubmission, type: 'contact' },
+        { model: FlightSubmission, type: 'flight' },
+        { model: TourSubmission, type: 'domestic', filterField: 'tourType', filterValue: 'domestic' },
+        { model: TourSubmission, type: 'international', filterField: 'tourType', filterValue: 'international' },
+        { model: VisaSubmission, type: 'visa' },
+        { model: PassportSubmission, type: 'passport' },
+        { model: ForexSubmission, type: 'forex' },
+        { model: HoneymoonSubmission, type: 'honeymoon' }
+      ];
+    } else if (type === 'domestic' || type === 'international') {
+      models = [{ model: TourSubmission, type, filterField: 'tourType', filterValue: type }];
+    } else {
+      const modelMap = {
+        'contact': ContactFormSubmission,
+        'flight': FlightSubmission,
+        'visa': VisaSubmission,
+        'passport': PassportSubmission,
+        'forex': ForexSubmission,
+        'honeymoon': HoneymoonSubmission
+      };
+      if (modelMap[type]) {
+        models = [{ model: modelMap[type], type }];
+      }
+    }
+    
+    // Prepare the base filter
+    const baseFilter = {};
+    if (status && status !== 'all') {
+      baseFilter.status = status;
+    }
+    if (search) {
+      baseFilter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    // Collect all submissions
+    let allSubmissions = [];
+    for (const modelConfig of models) {
+      let filter = { ...baseFilter };
+      if (modelConfig.filterField) {
+        filter[modelConfig.filterField] = modelConfig.filterValue;
+      }
+      
+      try {
+        const submissions = await modelConfig.model.find(filter).sort({ createdAt: -1 });
+        submissions.forEach(submission => {
+          const submissionData = submission.toObject();
+          submissionData.type = modelConfig.type;
+          allSubmissions.push(submissionData);
+        });
+      } catch (error) {
+        console.error(`Error fetching ${modelConfig.type} submissions:`, error);
+      }
+    }
+    
+    // Format output based on requested format
+    if (format === 'csv') {
+      // Define CSV headers
+      const csvHeaders = [
+        'ID', 'Type', 'Name', 'Email', 'Phone', 'Status', 
+        'Created At', 'Updated At', 'Read At'
+      ].join(',');
+      
+      // Create CSV rows
+      const csvRows = allSubmissions.map(submission => {
+        return [
+          submission._id,
+          submission.type,
+          escapeCsvField(submission.name || ''),
+          escapeCsvField(submission.email || ''),
+          escapeCsvField(submission.phone || ''),
+          submission.status || 'new',
+          submission.createdAt ? new Date(submission.createdAt).toISOString() : '',
+          submission.updatedAt ? new Date(submission.updatedAt).toISOString() : '',
+          submission.readAt ? new Date(submission.readAt).toISOString() : ''
+        ].join(',');
+      });
+      
+      // Combine headers and rows
+      const csvContent = [csvHeaders, ...csvRows].join('\n');
+      
+      // Set response headers for CSV download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=submissions-export.csv');
+      
+      // Send CSV data directly as text, not as JSON
+      return res.send(csvContent);
+    } else {
+      // For JSON format or default
+      return res.json({
+        success: true,
+        submissions: allSubmissions,
+        count: allSubmissions.length
+      });
+    }
+  } catch (error) {
+    console.error('Error exporting submissions:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error during export',
+      error: error.message
+    });
+  }
+});
+
 // Serve static files for production
 if (process.env.NODE_ENV === 'production') {
   // Redirect all non-API requests to index.html
@@ -713,20 +1029,20 @@ app.use((err, req, res, next) => {
 
 // Process-wide error handlers to prevent crashes
 process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', err);
+  console.error('UNCAUGHT EXCEPTION! Shutting down...', err);
   console.error(err.name, err.message, err.stack);
   // Give the server time to finish current requests before exiting
   process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! 💥', err);
+  console.error('UNHANDLED REJECTION!', err);
   console.error(err.name, err.message, err.stack);
   // Don't exit the process, just log the error
 });
 
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  console.log('SIGTERM RECEIVED. Shutting down gracefully');
   process.exit(0);
 });
 
